@@ -1,7 +1,11 @@
 #!/usr/bin/python3.4
 # -*-coding:Utf-8 -*
 """ Module containing the functions for :
-VegAu, STEP1: Assessing edible Crops for each PRA according to Environmental (Climate and Soil) Data and Biological Data"""
+VegAu, STEP1: Assessing edible Crops for each PRA according to Environmental (Climate and Soil) Data and Biological Data
+
+ATTENTION :
+This program only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+The import of this sheet is ensured by the module 'importingODS.py'"""
 
 
 #########################################
@@ -29,7 +33,11 @@ def WaterResources(month, PRA):
 
 
 def CORRseed_to(crop):
-	"""This funtion makes sure that seed_from(crop) < seed_to(crop) in case of a seeding period in winter.
+	"""INPUT:
+	crop is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+
+	FUNCTION:
+	Makes sure that seed_from(crop) < seed_to(crop) in case of a seeding period in winter.
 	"""
 
 	if seed_from(crop) < seed_to(crop):
@@ -39,7 +47,11 @@ def CORRseed_to(crop):
 #================================================================================================================
 
 def GSmax_for_CurrentCrop(crop):
-	"""Setting up the longest growing season possibility (GSmax(crop)) for the current crop.
+	"""INPUT:
+	crop is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+
+	FUNCTION:
+	Setting up the longest growing season possibility (GSmax(crop)) for the current crop.
 	Gives the amounts of months from seed_from(crop) to seed_to(crop)."""
 
 
@@ -61,7 +73,12 @@ def GSmax_for_CurrentCrop(crop):
 
 
 def CORR_TOLERdf(crop, x):
-	"""Converts the 'TOLERdrought(crop)' and 'TOLERflood(crop)' indexes into percentages of the ETC
+	"""INPUT:
+	*	x		is the class that contains all self variables used in all VegAu's functions
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+
+	FUNCTION:
+	Converts the 'TOLERdrought(crop)' and 'TOLERflood(crop)' indexes into percentages of the ETC
 	"""
 
 	#=======================================================================
@@ -90,9 +107,16 @@ def CORR_TOLERdf(crop, x):
 #########################################
 
 
-def ASSESS_Tmin_germ_forFruits(x, crop, PRA, all_crop_parameters_match_the_PRA_ones):
-	"""If the current crop is a fruit crop, Tmin(crop) germination must be considered before the other edibility assessement:
-	if Tmin_germ(crop) > TminMOY, the buds just never open !"""
+def ASSESS_Tmin_germ_forFruits(x, crop, PRA):
+	"""INPUT:
+	*	x		is the class that contains all self variables used in all VegAu's functions
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+
+	FUNCTION:
+	If the current crop is a fruit crop, Tmin(crop) germination must be considered before the other edibility assessement:
+	if Tmin_germ(crop) > TminMOY(PRA) while the whole winter, the buds just never open !
+	TminMOY(PRA) must be lower than Tmin_germ(crop) at least one month in the winter."""
 
 	x.edible_Tmin_germ = []
 	edibTest = 0
@@ -104,7 +128,7 @@ def ASSESS_Tmin_germ_forFruits(x, crop, PRA, all_crop_parameters_match_the_PRA_o
 	#======================================================================
 
 
-	if prodCAT(crop) == 1: #if the crop is a fruit tree crop
+	if prodCAT(crop) == 1 or prodCAT(crop) == 2 : #if the crop is a fruit tree crop
 		print("The current crop is a tree/shrub: verifying if winter is cold enough...")
 		CurrentMonth = 11
 		GSmax = 5 # in this case, only winter is considered to see if the minimal Tgermination for fruit trees is reached at least one month in winter
@@ -112,33 +136,47 @@ def ASSESS_Tmin_germ_forFruits(x, crop, PRA, all_crop_parameters_match_the_PRA_o
 		while i <= GSmax:
 			if CurrentMonth % 12 == 0:
 				if Tmin_germ(crop) <= TminMOY(12, PRA):
-					all_crop_parameters_match_the_PRA_ones = False
+					x.edible_Tmin.append(False)
+				else:
+					x.edible_Tmin.append(True)
 			elif CurrentMonth % 12 != 0:
 				if Tmin_germ(crop) <= TminMOY(CurrentMonth%12, PRA):
-					all_crop_parameters_match_the_PRA_ones = False
+					x.edible_Tmin.append(False)
+				else:
+					x.edible_Tmin.append(True)
 			CurrentMonth += 1
 			i += 1
-		i = 0
-		PRAedibTest = 0
-		while i < len(x.edible_Tmin_germ):
-			if x.edible_Tmin_germ[i] is True:
-				PRAedibTest += 1
-			elif x.edible_Tmin_germ[i] is False:
-				PRAedibTest += 0
-			i+=1
-		if PRAedibTest == 0 :
-			all_crop_parameters_match_the_PRA_ones = False
+
+		# --------------------------------------
+
+		if True not in x.edible_Tmin:
+			x.all_crop_parameters_match_the_PRA_ones = False
 
 		print("	OK")
 
 
-def ASSESS_Tmin(crop, x, PRA, all_crop_parameters_match_the_PRA_ones):
-	"""Tmin(crop) assessement: is Tmin (crop) < TminMOY (PRA) ?
-	Notice: not "<=" because TminMOY is an average value: it would average that, some days, the coldest T is lower than Tmin(crop) (crop) !"""
+def ASSESS_Tmin(crop, x, PRA):
+	"""INPUT:
+	*	x		is the class that contains all self variables used in all VegAu's functions
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+
+	FUNCTION:
+	Minimum Temperature assessement: is Tmin (crop) < TminMOY (PRA) ?
+	Notice: not "<=" because TminMOY is an average value: it would average that, some days, the coldest T is
+	lower than Tmin(crop) (crop) !
+
+	OUTPUT:
+	It just verifies if x.all_crop_parameters_match_the_PRA_ones remains True or not. If the PRA minimum Temperature
+	is lower than the one supported by the crop for a duration that is longer than or equal to the minimum growing
+	season duration (GSmin)"""
+
 	x.edible_Tmin = []
-	i = 1
+	GrowingMonth = 1
 	CurrentMonth = int(seed_from(crop))
-	while i <= GSmax(crop):
+	maximum_growing_season_duration = int(GSmax(crop))
+
+	while GrowingMonth <= maximum_growing_season_duration:
 		if CurrentMonth % 12 == 0:
 			if Tmin(crop) < TminMOY(12, PRA):
 				x.edible_Tmin.append(True)
@@ -150,24 +188,45 @@ def ASSESS_Tmin(crop, x, PRA, all_crop_parameters_match_the_PRA_ones):
 			else:
 				x.edible_Tmin.append(False)
 		CurrentMonth += 1
-		i += 1
+		GrowingMonth += 1
 	
-	PRAedibTest = 0
-	for edibility in x.edible_Tmin:
-		if edibility is True:
-			PRAedibTest += 1
-		elif edibility is False:
-			PRAedibTest = 0
+		PRAedibTest = []
+		count = 0
 
-		
-	if PRAedibTest <= GSmin(crop):
-		all_crop_parameters_match_the_PRA_ones = False
+		for MonthIndex, Tmin_edibility in enumerate(x.edible_Tmin):
+			if MonthIndex < (len(x.edible_Tmin) - 1) : # indexes begin with 0, so the last index will be the list length - 1
+				if Tmin_edibility == True:
+					if x.edible_Tmin[MonthIndex - 1] == Tmin_edibility:
+						count += 1
+					else:
+						PRAedibTest.append(count)
+						count = 1
+			else:								# for the last entry in the list 'x.edible_Tmin' :
+												# else, if the list does not end with 'False',
+												# the count of consecutive 'True' would not be added to the list
+				if Tmin_edibility == True:
+					PRAedibTest.append(count)
+
+		# --------------------------------------
+
+		if max(PRAedibTest) <= GSmin(crop):
+			x.all_crop_parameters_match_the_PRA_ones = False
 
 
+def ASSESS_Water(crop, PRA, x):
+	"""INPUT:
+	*	x		is the class that contains all self variables used in all VegAu's functions
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
 
-def ASSESS_Water(crop, PRA, x, all_crop_parameters_match_the_PRA_ones):
-	"""Water requirement assessement: Are pecipitations and field capacity sufficient to store enough water to fulfil
-	the water requirement (ETc) for each ¼ of the (maximal !) total growing stage?"""
+	FUNCTION:
+	Water requirement assessement: Are pecipitations and field capacity sufficient to store enough water to fulfil
+	the water requirement (ETc) for each ¼ of the (maximal !) total growing stage?
+
+	OUTPUT:
+	It just verifies if x.all_crop_parameters_match_the_PRA_ones remains True or not. If the PRA Water Ressources
+	cover the crop's Water Requirement (ETc) for a duration that is longer than or equal to the minimum growing
+	season duration (GSmin), it becomes False and the crop is skipped."""
 
 
 	#~ from selfVariables import x.TOLERdrought
@@ -184,26 +243,28 @@ def ASSESS_Water(crop, PRA, x, all_crop_parameters_match_the_PRA_ones):
 
 	CORR_TOLERdf(crop, x) # these function updates x.TOLERflood and x.TOLERdrought --> calculates % from the indices TOLERflood(crop) and TOLERdrought(crop)
 	edible_WaterRqt = []
-	GS1_4	= ceil(GSmax(crop) * 0.25 )
-	GS2_4	= ceil(GSmax(crop) * 0.50 )
-	GS3_4	= ceil(GSmax(crop) * 0.75 )
+	maximum_growing_season_duration = GSmax(crop)
+	GS1_4	= round(maximum_growing_season_duration * 0.25 )
+	GS2_4	= round(maximum_growing_season_duration * 0.50 )
+	GS3_4	= round(maximum_growing_season_duration * 0.75 )
 
 	GrowingMonth = 1
+	CurrentMonth = seed_from(crop)
 
-	while GrowingMonth <= GSmax(crop):
-		CurrentMonth = seed_from(crop) + (GrowingMonth - 1) # GrowingMonth begins with 1
+	while GrowingMonth <= maximum_growing_season_duration:
 		#= Determining the current stage of the GS =============================================
-		if CurrentMonth <= GS1_4 :
+		if GrowingMonth <= GS1_4 :
+			ETc = Kc1_4(crop) * ETPmoy(CurrentMonth, PRA)
 			print("Kc1_4(crop) =", Kc1_4(crop))
 			print("ETPmoy(CurrentMonth,PRA) =",ETPmoy(CurrentMonth, PRA))
 			print("Assessing the Water Resources for the 1st quarter of the growing season...")
-			ETc		= Kc1_4(crop) * ETPmoy(CurrentMonth, PRA)
 
-		elif CurrentMonth <= GS2_4 :
+
+		elif GrowingMonth <= GS2_4 :
 			ETc		= Kc2_4(crop) * ETPmoy(CurrentMonth, PRA)
 			print("Assessing the Water Resources for the 2nd quarter of the growing season...")
 
-		elif CurrentMonth <= GS3_4 :
+		elif GrowingMonth <= GS3_4 :
 			ETc= Kc3_4(crop)*ETPmoy(CurrentMonth, PRA)
 			print("Assessing the Water Resources for the 3rd quarter of the growing season...")
 
@@ -228,6 +289,7 @@ def ASSESS_Water(crop, PRA, x, all_crop_parameters_match_the_PRA_ones):
 				edible_WaterRqt.append(False)
 			#--------------------------------------
 		CurrentMonth += 1
+		GrowingMonth += 1
 
 
 		#END while-------------------------------------------------------------------------------
@@ -241,27 +303,47 @@ def ASSESS_Water(crop, PRA, x, all_crop_parameters_match_the_PRA_ones):
 	print("edible_WaterRqt = ", edible_WaterRqt)
 
 	PRAedibTest = 0
+	the_selected_crop_is_a_permanent_crop = prodCAT(crop) == 1 or prodCAT(crop) == 2  # fruit/nut tree (1), shrub (2)
 
-	for monthIndex, Tmin_edibility in enumerate(x.edible_Tmin):
-		print("monthIndex in x.edible_Tmin = ", monthIndex)
-		#--------------------------------------
-		if edible_WaterRqt[monthIndex] == True and Tmin_edibility == True:
-			PRAedibTest += 1
-		else :
-			PRAedibTest = 0
-		#--------------------------------------
-	if PRAedibTest <= GSmin(crop):
-		all_crop_parameters_match_the_PRA_ones = False
+	if the_selected_crop_is_a_permanent_crop :
+		pass
+	else:
+		PRAedibTest = []
+		count = 0
+
+		for MonthIndex, Tmin_edibility in enumerate(x.edible_Tmin):
+			if edible_WaterRqt[MonthIndex] == True and Tmin_edibility == True:
+				if edible_WaterRqt[MonthIndex - 1] == edible_WaterRqt[MonthIndex] and x.edible_Tmin[MonthIndex - 1] == Tmin_edibility:
+					count += 1
+				else:
+					PRAedibTest.append(count)
+					count = 1
+
+		# --------------------------------------
+
+		if max(PRAedibTest) <= GSmin(crop):
+			x.all_crop_parameters_match_the_PRA_ones = False
 
 
 
 
-def ASSESS_pH(crop, PRA, x, all_crop_parameters_match_the_PRA_ones):
-	"""pH(PRA) requirement assessement: the median pH(PRA) value of the current PRA must be included in the range [pHmin(crop):pHmax(crop)] of the current crop."""
+def ASSESS_pH(crop, PRA, x):
+	"""INPUT:
+	*	x		is the class that contains all self variables used in all VegAu's functions
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+
+	FUNCTION:
+	pH(PRA) requirement assessement: the median pH(PRA) value of the current PRA must be included in the range
+	[pHmin(crop):pHmax(crop)] of the current crop.
+
+	OUTPUT:
+	It just verifies if x.all_crop_parameters_match_the_PRA_ones remains True or not. If the PRA's soil pH does not
+	match with the crop's pH window, it becomes False and the crop is skipped."""
 
 
 	if pHmin(crop) >= pH(PRA) >= pHmax(crop):
-		all_crop_parameters_match_the_PRA_ones = False
+		x.all_crop_parameters_match_the_PRA_ones = False
 		print("The soil pH of this PRA does not match to the crop requirements.")
 
 	print("The soil pH of this PRA matches to the crop requirements !")
@@ -269,13 +351,26 @@ def ASSESS_pH(crop, PRA, x, all_crop_parameters_match_the_PRA_ones):
 
 
 def PriorityAssessement(x, data):
-	"""This function calculates a priority indexes: PRIORITYgeneral, PRIORITYfruits and PRIORITYtextiles.
+	"""INPUT:
+	*	x		is the class that contains all self variables used in all VegAu's functions
+	*	data	is the class that contains the original 'plants' and 'environment' data bases
+				from 'input[COUNTRY].py' (e.g. 'inputFR.py' for France).
+
+	FUNCTION:
+	This function calculates a priority indexes: PRIORITYgeneral, PRIORITYfruits and PRIORITYtextiles.
 	While compiling the crop rotation, in case there are several edible crops to continue the rotation,
 	these indexes will allow to chose a crop that have a higher geo-political importance than the others.
 	PRIORITYgeneral is from 1 to 3
 	PRIORITYfruits is from 1 to 5
 	PRIORITYtextile is from 1 to 3
 	the lower the index, the bigger the geo-political importance
+
+	OUTPUT:
+	an updated 'plants' dictionary with the new entries (keys) :
+	*	'ratioADAPT'
+	*	'PRIORITYgeneral'
+	*	'PRIORITYfruits'
+	*	'PRIORITYtextiles'
 	"""
 
 

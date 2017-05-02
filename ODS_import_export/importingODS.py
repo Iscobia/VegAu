@@ -86,7 +86,7 @@ if os.path.exists( file_name + '.py' ):
 for sheet in dicts.keys():
 	sheet_name = str(sheet)
 	sheet = doc.sheets[sheet_name]
-	print("Loading data from the '{}' sheet in to the dictionnary '{}'...".format(sheet_name, dicts[sheet_name]))
+	print("Loading data from the '{}' sheet in to the dictionary '{}'...".format(sheet_name, dicts[sheet_name]))
 	
 	
 	imported_data = {}

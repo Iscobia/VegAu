@@ -143,7 +143,7 @@ PRAedibility[0,6].value	=	'edibleCropsDE'
 #	* 'prodSURFACE' gives the potential total surface covered by the selected crop
 #	* 'ratioADAPT', 'PRIORITYgeneral', 'PRIORITYfruits' and 'PRIORITYtextile' give the different priority indices
 
-# ATTENTION, FONCTION SIMPLIFIÉE LE  19 MARS 2017: SI PROBLÈMES, REPRENDRE L'ANCIENNE:
+# ATTENTION, function SIMPLIFIÉE LE  19 MARS 2017: SI PROBLÈMES, REPRENDRE L'ANCIENNE:
 SURFrow = len(PRAvirgin_dict.keys())
 PRAedibility[SURFrow,2].value = 'prodSURFACE'
 

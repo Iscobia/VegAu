@@ -1,8 +1,12 @@
 #!/usr/bin/python3.4
 # -*-coding:Utf-8 -*
-"""VegAu is a programm to estimate the nutritional yield for a single place
+"""VegAu is a program to estimate the nutritional yield for a single place
 up to a whole country in order to compare it with the Dietical requirement
-of the population."""
+of the population.
+
+ATTENTION :
+This program only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+The import of this sheet is ensured by the module 'importingODS.py'"""
 
 
 #########################################
@@ -33,9 +37,9 @@ print("Importing modules...")
 #										#
 #########################################
 
-from inputFR import environment	# dictionnary containing all environmental data
-from inputFR import plants		# dictionnary containing all data.plants (biological) data
-from inputFR import nutrition	# dictionnary containing dietical properties of each crop from 'plants'
+from inputFR import environment	# dictionary containing all environmental data
+from inputFR import plants		# dictionary containing all data.plants (biological) data
+from inputFR import nutrition	# dictionary containing dietical properties of each crop from 'plants'
 
 from importedVariables import *	# lambda functions to access easier to the data from the abode imported dicts
 
@@ -75,9 +79,18 @@ class data:
 
 
 def PRAedibilityTest(x, data):
-	"""Fonction that tests if a PRA is edible or not to grow a crop.
-	This function only works with the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
-	This function tests each crop of 'plants' according to the environmental data from 'environment'."""
+	"""INPUT :
+	*	x		is the class that contains all self variables used in all VegAu's functions
+	*	data	is the class that contains the original 'plants' and 'environment' data bases
+				from 'input[COUNTRY].py' (e.g. 'inputFR.py' for France).
+	AIM :
+	Testing if a PRA is edible or not to grow a crop.
+	This function tests each crop of 'plants' according to the environmental data from 'environment'.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'
+	"""
 
 	country		=	sorted(data.environment.keys())
 	database	=	sorted(data.plants.keys())
@@ -101,60 +114,65 @@ def PRAedibilityTest(x, data):
 					print("The current crop is :", crop)
 
 					#=======================================================================================================================================
-					# assessement fonctions
-
+					# assessement functions
+					x.all_crop_parameters_match_the_PRA_ones = True
 					the_selected_crop_is_a_permanent_crop = prodCAT(crop) == 1 or prodCAT(crop) == 2 # fruit/nut tree (1), shrub (2)
-					all_crop_parameters_match_the_PRA_ones = True
 
-					while all_crop_parameters_match_the_PRA_ones :
+					while x.all_crop_parameters_match_the_PRA_ones :
 
 						try :
 
 							if the_selected_crop_is_a_permanent_crop:
-								ASSESS_Tmin_germ_forFruits(x, crop, PRA, all_crop_parameters_match_the_PRA_ones)
+								ASSESS_Tmin_germ_forFruits(x, crop, PRA)
 							else:
-								ASSESS_Tmin( crop, x, PRA, all_crop_parameters_match_the_PRA_ones )
-							ASSESS_Water( crop, PRA, x, all_crop_parameters_match_the_PRA_ones)
-							ASSESS_pH(crop, PRA, x, all_crop_parameters_match_the_PRA_ones)
+								ASSESS_Tmin( crop, x, PRA)
+							ASSESS_Water( crop, PRA, x)
+							ASSESS_pH(crop, PRA, x)
 
 						except ValueError : # if there is a missing variable in the database
 							pass
 
 						print("""This crop is edible for the current PRA ! :D""")	# if the code runs till this line, the crop is edible
-																					# because all_crop_parameters_match_the_PRA_ones == True
+																					# because x.all_crop_parameters_match_the_PRA_ones == True
 						print("prodID(crop) = ", prodID(crop), "prod_EN(crop) = ", prod_EN(crop))
 						x.edibleCropsID[PRA].append(prodID(crop))
 						x.edibleCropsEN[PRA].append(prod_EN(crop))
 						x.edibleCropsFR[PRA].append(prod_FR(crop))
 						x.edibleCropsDE[PRA].append(prod_DE(crop))
 
-						print("Adding the PRA's surface to the 'prodSURFACE' dictionnary...")
+						print("Adding the PRA's surface to the 'prodSURFACE' dictionary...")
 						if crop not in x.prodSURFACE.keys():
 							x.prodSURFACE[crop] = 0
 						x.prodSURFACE[crop] += PRAsurface(PRA)
 						print("	OK")
 						# End of the edibility assessement for the current crop --> the loop's boolean is set to False :
-						all_crop_parameters_match_the_PRA_ones = False
-						print("all_crop_parameters_match_the_PRA_ones = ", all_crop_parameters_match_the_PRA_ones)
+						x.all_crop_parameters_match_the_PRA_ones = False
+						print("x.all_crop_parameters_match_the_PRA_ones = ", x.all_crop_parameters_match_the_PRA_ones)
 
-						# END while (all_crop_parameters_match_the_PRA_ones)
+						# END while (x.all_crop_parameters_match_the_PRA_ones)
 
 					#END for (crop in database)
 
-			print( "	There are {} edible crops for this PRA.".format(len(x.edibleCropsID)) )
+			print( "	There are {} edible crops for this PRA.".format(len(x.edibleCropsID[PRA])) )
 
 			#END for (pra in country)
 		
 		
 		
 	PriorityAssessement(x, data)# assessing the priority indexes for each crop (PRIORITYgeneral(crop), PRIORITYfruits(crop), PRIORITYtextiles)
-	# needs the x.prodSURFACE value to be copied in PRAedibility (cf previous fonction)
+	# needs the x.prodSURFACE value to be copied in PRAedibility (cf previous function)
 		
 
 def ASSESS_PRArotation(x, data):
-	"""Fonction that creates an optimal rotation using crops wich
+	"""INPUT :
+	*	x		is the class that contains all self variables used in all VegAu's functions
+	*	data	is the class that contains the original 'plants' and 'environment' data bases
+				from 'input[COUNTRY].py' (e.g. 'inputFR.py' for France).
+
+	AIM :
+	This function creates an optimal rotation using crops which
 	have previously been selected as "edible".
-	This function tests each crop of 'plants' according to the environmental
+	It tests each crop of 'plants' according to the environmental
 	data from 'environment'.
 	
 	---------------------------------
@@ -195,13 +213,13 @@ def ASSESS_PRArotation(x, data):
 			#~ PRA = PRArow_ENVIRONMENT(pra)
 
 			x.rotat[PRA] = []
-			x.edibleCropsWR	= {}	# dictionnary that will assign each crop index to a Water Resources assessement index
-			edibleCropsSN	= {}	# dictionnary that will assign each crop index to a Soil Nutrient assessement index
-			x.edibleCropsPnD	= {}	# dictionnary that will assign each crop index to a Pest and Diseases assessement index
+			x.edibleCropsWR	= {}	# dictionary that will assign each crop index to a Water Resources assessement index
+			edibleCropsSN	= {}	# dictionary that will assign each crop index to a Soil Nutrient assessement index
+			x.edibleCropsPnD	= {}	# dictionary that will assign each crop index to a Pest and Diseases assessement index
 			x.WRmargin_moy	= {}
 
 			x.VERIFprodBOT = {}
-			PestsDiseases_in_rotation = {}	# dictionnary that will assign each crop index to YIELD depreciating index if it is  subject to Pest and Diseases risks.
+			PestsDiseases_in_rotation = {}	# dictionary that will assign each crop index to YIELD depreciating index if it is  subject to Pest and Diseases risks.
 			PestsDiseases_total = 0
 
 			x.ActualStand[PRA] = {"N": nmin_med(PRA), "P": P_med(PRA), "K": K_med(PRA), "Na": nao_med(PRA), "Mg": mgo_med(PRA), "Ca": cao_med(PRA), "Mn": mned_med(PRA), "Fe": feed_med(PRA), "Cu": cued_med(PRA), "OM": corgox_med(PRA)}
@@ -227,7 +245,7 @@ def ASSESS_PRArotation(x, data):
 					###########################
 
 					x.edibleCrops=[x.SelectedCrop]
-					ASSESS_Nutrients(x)
+					ASSESS_Nutrients(crop, x, PRA)
 					SelectedCrop_Harvest(PRA, x)
 					x.totalYields[x.SelectedCrop] += expYIELD(x.SelectedCrop) * x.WRmargin_moy[x.SelectedCrop]
 					print("	OK")
@@ -243,13 +261,13 @@ def ASSESS_PRArotation(x, data):
 					FindOptimalSeedingDate(crop, PRA, x)
 					# after this function, we have :
 					#		* a list 'edibleCrops' with the index of every edible crop for this x.rotation's time according to the sawing/planting date.
-					#		* a dictionnary 'GSstart' with: keys = crop's indexes, values = first GS month
+					#		* a dictionary 'GSstart' with: keys = crop's indexes, values = first GS month
 
 
 					ASSESS_OptimalWaterResources(crop, PRA, x)
 					# after this function, we get:
 					#		* an updated "x.edibleCrops' list
-					#		* an 'edibleCropsWR' dictionnary with :
+					#		* an 'edibleCropsWR' dictionary with :
 					#			*	keys = CROProw
 					#			*	values = standardized "WaterResources evaluation" (WReval)
 
@@ -258,7 +276,7 @@ def ASSESS_PRArotation(x, data):
 					ASSESS_Nutrients(x)
 					# after this function, we get:
 					#	* an updated "x.edibleCrops' list
-					#	* an 'edibleCropsSN' dictionnary ('SN' for 'Soil Nutrients') with:
+					#	* an 'edibleCropsSN' dictionary ('SN' for 'Soil Nutrients') with:
 					#			*	keys = CROProw
 					#			*	values = standardized nutrients margin
 
@@ -267,7 +285,7 @@ def ASSESS_PRArotation(x, data):
 
 
 					ASSESS_PestDiseases(crop, x)
-					# returns an updated ediblePnD dictionnary with, for each crop, an index according to the risks of pests and diseases
+					# returns an updated ediblePnD dictionary with, for each crop, an index according to the risks of pests and diseases
 					# relative to a too short period between several crops of a same botanic family
 
 
@@ -286,7 +304,7 @@ def ASSESS_PRArotation(x, data):
 
 
 					# assessing if there is possible to mix the x.SelectedCrop with a CompanionCrop
-					ASSESS_Water_CompanionCrop_for_SelectedCrop(x)
+					ASSESS_Water_CompanionCrop_for_SelectedCrop(crop, x, data, CurrentMonth)
 					ASSESS_Nutrients_CompanionCrop_for_SelectedCrop(x)
 
 					#------------------------------------------------------------------------
@@ -340,7 +358,7 @@ def ASSESS_PRArotation(x, data):
 					# now, x.RotatMonth corresponds to the duration from the begining of the rotation up to x.GSstart[x.SelectedCrop]
 
 					update_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x)
-					# This function creates an entry in x.VERIFprodBOT for the newly selected crop if there is no one in the dictionnary
+					# This function creates an entry in x.VERIFprodBOT for the newly selected crop if there is no one in the dictionary
 					# and verifies if the minimum return period is respected.
 					# 		* If respected : no Pest and Diseases malus
 					# 		* If not respected : +1 for this crop in the dict 'PestsDiseases_in_rotation'.
@@ -394,10 +412,10 @@ if __name__ == '__main__':
 	#~ 
 	#~ ASSESS_FoodNutrients( x )
 	#~ # --> It sums the nutrients and vitamins of all products in the appropriate variables (1 variable per nutritional feature)
-	#~ # of the dictionnary 'TotalNutrients' (each key corresponds to a nutrient, vitamin or other dietetic feature)
+	#~ # of the dictionary 'TotalNutrients' (each key corresponds to a nutrient, vitamin or other dietetic feature)
 	#~ 
 	#~ ASSESS_QTTperPERSON( x )
-	#~ # This function updates the 'TotalNutrients' dictionnary by dividing each nutrient amount by the total population
+	#~ # This function updates the 'TotalNutrients' dictionary by dividing each nutrient amount by the total population
 	#~ # and copies the results in the sheet 'NUTRIassess' for each crop in order to keep a friendly interface to oberve the results.
 	#~ # OUTPUT:	* updated 'TotalNutrient' dictionnay with the average nutrient quantity per person 
 	#~ # 			* fulfilled 'NUTRIassess' sheet

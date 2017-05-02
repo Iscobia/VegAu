@@ -2,7 +2,10 @@
 # -*-coding:Utf-8 -*
 """Module containing the functions for :
 VegAu, STEP2: Building a typical Crop Rotation for each PRA according to Climate and Soil Data
-"""
+
+ATTENTION :
+This program only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+The import of this sheet is ensured by the module 'importingODS.py'"""
 #########################################
 #										#
 #		IMPORTING EXTERNAL MODULES		#
@@ -28,6 +31,14 @@ from importedVariables import *	# lambda functions to access easier to the data 
 
 
 def MonthID(RotatMonth):
+	"""INPUT:
+	RotatMonth is the amount of months after the beginning of the computed rotation.
+
+	OUTPUT:
+	Returns the month ID composed by the 3 first letters of the month and the amount of years after the beginning
+	of the rotation.
+	"""
+
 	year = str( (RotatMonth//12)+1 )
 	if RotatMonth % 12 == 0:
 		return "dec"+str(int(year)-1)
@@ -59,15 +70,18 @@ def MonthID(RotatMonth):
 
 #~ 
 def ADAPT_EndGS_later(x):
-	"""This fonction makes sure that the month of x.EndPreviousCrop_later
+	"""INPUT :
+	x	is the class that contains all self variables used in all VegAu's functions
+
+	FUNCTION:
+	This function makes sure that the month of x.EndPreviousCrop_later
 	is always later than x.EndPreviousCrop_earlier.
 	The contrary can happend for winter crops, if :
 		x.EndPreviousCrop_earlier	= 11 (November)
 	and x.EndPreviousCrop_later		= 1 (January)...
 
-	With ADAPT_EndGS_later, you get :
-	x.EndPreviousCrop_earlier = 11 < x.EndPreviousCrop_later = 13
-														(because 1 + 12)
+	OUTPUT:
+	x.EndPreviousCrop_earlier = 11 < x.EndPreviousCrop_later = 13 (because 1 + 12)
 	"""
 	
 	if (x.EndPreviousCrop_earlier) // 12  >  (x.EndPreviousCrop_later) // 12 :
@@ -80,8 +94,15 @@ def ADAPT_EndGS_later(x):
 
 
 def ETc_GSmax(crop, month, x, PRA):
-	"""This function returns the ETc value for each month of the growing season calculated in STEP2 (not STEP1 !!) for
-	the rotation simulation. It uses the variable x.EndPreviousCrop and GSmax(crop) to calculate its position in the GS duration.
+	"""INPUT :
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	month	is the number of the current month (1 for January, 3 for March, 10 for October, etc)
+	*	x		is the class that contains all self variables used in all VegAu's functions
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+
+	OUTPUT :
+	ETc value for each month of the growing season calculated in STEP2 (not STEP1 !!) for the rotation simulation.
+	It uses the variable x.EndPreviousCrop and GSmax(crop) to calculate its position in the GS duration.
 	"""
 	
 	month 	= month % 12
@@ -106,8 +127,14 @@ def ETc_GSmax(crop, month, x, PRA):
 
 
 def ETc_GSmin(crop, month, x):
-	"""This function returns the ETc value for each month of the growing season calculated in STEP2 (not STEP1 !!) for
-	the rotation simulation. It uses the variable x.EndPreviousCrop and GSmin(crop) to calculate its position in the GS duration.
+	"""INPUT :
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	month	is the number of the current month (1 for January, 3 for March, 10 for October, etc)
+	*	x		is the class that contains all self variables used in all VegAu's functions
+
+	OUTPUT :
+	ETc value for each month of the growing season calculated in STEP2 (not STEP1 !!) for the rotation simulation.
+	It uses the variable x.EndPreviousCrop and GSmin(crop) to calculate its position in the GS duration.
 	"""
 
 	month 	= month % 12
@@ -132,8 +159,14 @@ def ETc_GSmin(crop, month, x):
 
 
 def WRmargin_GSmax(crop, month, x, PRA): # inutilisée
-	"""This function returns the proportional margin between the PRA's
-	WaterResources(month) and the most extremes plant's needs :
+	"""INPUT :
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	month	is the number of the current month (1 for January, 3 for March, 10 for October, etc)
+	*	x		is the class that contains all self variables used in all VegAu's functions
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+
+	OUTPUT :
+	Proportional margin between the PRA's WaterResources(month) and the most extremes plant's needs/tolerance :
 	---> Water Resources / Crops Requirement * Tolerance to Drought
 	
 	The more the monthly WR are near from this extreme value, the highest
@@ -163,8 +196,14 @@ def WRmargin_GSmax(crop, month, x, PRA): # inutilisée
 
 
 def WRmargin_GSmin(crop, month, x, PRA):
-	"""This function returns the proportional margin between the PRA's
-	WaterResources(month) and the most extremes plant's needs :
+	"""INPUT :
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	month	is the number of the current month (1 for January, 3 for March, 10 for October, etc)
+	*	x		is the class that contains all self variables used in all VegAu's functions
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+
+	OUTPUT:
+	Proportional margin between the PRA's WaterResources(month) and the most extremes plant's needs :
 	---> Water Resources / Crops Requirement * Tolerance to Drought
 	
 	The more the monthly WR are near from this extreme value, the highest
@@ -174,6 +213,7 @@ def WRmargin_GSmin(crop, month, x, PRA):
 	
 	This function is used in ASSESS_OptimalWaterResources(crop, PRA, x) where the
 	WRmargin_GSmax(crop, month, x, PRA) values are standardized to get an index from 0 to 1.
+
 	"""
 
 	#~ FUNCTION AS BEFORE  2017.03.22: 
@@ -238,10 +278,18 @@ returnedOM	= lambda prodID: returnedN(prodID) * CN(prodID)
 
 
 def mineralizedCPK(crop, month):
-	"""Function based on the article of Justes et al. (2009) for the model STICS : https://www.researchgate.net/publication/225690616_Quantifying_and_modelling_C_and_N_mineralization_kinetics_of_catch_crop_residues_in_soil_Parameterization_of_the_residue_decomposition_module_of_STICS_model_for_mature_and_non_mature_residues)
+	"""INPUT :
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	month	is the number of the current month (1 for January, 3 for March, 10 for October, etc)
+
+	FUNCTION:
+	Function based on the article of Justes et al. (2009) for the model STICS : https://www.researchgate.net/publication/225690616_Quantifying_and_modelling_C_and_N_mineralization_kinetics_of_catch_crop_residues_in_soil_Parameterization_of_the_residue_decomposition_module_of_STICS_model_for_mature_and_non_mature_residues)
 	It returns the mineralized C (OM) in function of time. For the moment, we assume than, because C is not the bacteria's fodder,
 	this function can also be applied to P and K. If there is other known functions/parameters for P and K, the code should be updated
-	with these new functions/parameters. 
+	with these new functions/parameters.
+
+	OUTPUT:
+	the OM amount returned to the soil after decomposition
 	"""
 	from math import exp
 	
@@ -269,11 +317,19 @@ def mineralizedCPK(crop, month):
 
 
 def mineralizedN(crop, month):
-	"""Function based on the article of Justes et al. (2009) for the model STICS : https://www.researchgate.net/publication/225690616_Quantifying_and_modelling_C_and_N_mineralization_kinetics_of_catch_crop_residues_in_soil_Parameterization_of_the_residue_decomposition_module_of_STICS_model_for_mature_and_non_mature_residues)
-	It returns the mineralized N in funtion of time.
+	"""INPUT :
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	month	is the number of the current month (1 for January, 3 for March, 10 for October, etc)
+
+	FUNCTION:
+	Function based on the article of Justes et al. (2009) for the model STICS : https://www.researchgate.net/publication/225690616_Quantifying_and_modelling_C_and_N_mineralization_kinetics_of_catch_crop_residues_in_soil_Parameterization_of_the_residue_decomposition_module_of_STICS_model_for_mature_and_non_mature_residues)
+	It returns the mineralized N in function of time.
+
+	OUTPUT:
+	the amount of N that is returned to the soil after decomposition
 	"""
 	from math import exp
-	t=month*30.5 # this function requires days
+	t	=	month * 30.5 # this function requires days
 	R	=	CN(crop)
 	a	=	15.4
 	b	=	76
@@ -314,13 +370,22 @@ def mineralizedN(crop, month):
 
 
 def FindOptimalSeedingDate(crop, PRA, x):
-	"""
+	"""INPUT :
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+	*	x		is the class that contains all self variables used in all VegAu's functions
+
+	FUNCTION:
 	Fulfil the list 'edibleCrops' by keeping only the x.edible crops (from 'edibleCropsID') for which the
 	earliest seeding date is before the latest end of the previous crop's GS.
 	
 	If no crop can be planted before or while the last month of the previous crop's GS (x.EndPreviousCrop_later),
 	the crops are sorted by the time between their seed_from(crop) and the x.EndPreviousCrop_later. Only the 2 shortest
 	durations are allowed for the crop to be added in the list 'edibleCrops'.
+
+	OUTPUT:
+	'edibleCrops' list with the x.edible crops (from 'edibleCropsID') for which the earliest seeding date
+	is before the latest end of the previous crop's GS
 	"""
 
 	
@@ -360,12 +425,12 @@ def FindOptimalSeedingDate(crop, PRA, x):
 		Looking for the shortest delay among seeding dates of the PRA's x.edible crops...""")
 		# restoring the 'edibleCrops' list
 		x.edibleCrops	=	list(x.edibleCropsID[PRA])
-		# creating a new dictionnary which bounds the crops indexes to the duration btw their earliest seeding date
+		# creating a new dictionary which bounds the crops indexes to the duration btw their earliest seeding date
 		# and the earliest end date of the previous crop's GS:
 		SelectEarlierPlanting = {}
 		for crop in x.edibleCrops:
 			SelectEarlierPlanting[crop] = seed_from(crop) - x.EndPreviousCrop_earlier
-		# selecting the earliest planting date among the crops from the 'SelectEarlierPlanting' dictionnary:
+		# selecting the earliest planting date among the crops from the 'SelectEarlierPlanting' dictionary:
 		PlantingDate_1 = sorted(SelectEarlierPlanting.values())[0]
 		PlantingDate_2 = sorted(SelectEarlierPlanting.values())[1]
 		
@@ -387,11 +452,18 @@ def FindOptimalSeedingDate(crop, PRA, x):
 
 			
 def ASSESS_OptimalWaterResources(crop, PRA, x):
-	"""This function compares the quality of the Water Resources provided by the current PRA for each x.edible crop.
+	"""INPUT :
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+	*	x		is the class that contains all self variables used in all VegAu's functions
+				---> x.edibleCrops (list), x.RotatMonth (int), x.GSstart (int), x.TOLERdrought/-flood (int)
+
+	FUNCTION:
+	This function compares the quality of the Water Resources provided by the current PRA for each x.edible crop.
 	If the PRA's monthly minimum Temperatures are lower than Tmin(crop) while at least one month in GSmin(crop), the crop is eliminated.
-	
-	REQUIRED INPUT: x.edibleCrops (list), x.RotatMonth (int), x.GSstart (int), TOLERdrought(crop)/-flood (int) 
-	OUTPUT: x.edibleCropsWR (dict) with a standardized WReval index: the lower the index value, the worse the WaterResources conditions.
+
+	OUTPUT:
+	x.edibleCropsWR (dict) with a standardized WReval index: the lower the index value, the worse the WaterResources conditions.
 	"""
 	
 	x.TOLERdrought = 0
@@ -436,7 +508,7 @@ def ASSESS_OptimalWaterResources(crop, PRA, x):
 					WReval += 0
 				else :
 				# the crop's Water Requirements do not match with the PRA's Water Resources
-				# -> this crop is deleted from the dictionnary
+				# -> this crop is deleted from the dictionary
 					del x.edibleCrops[int(crop)]
 					del x.edibleCropsWR[int(crop)]
 					month_in_GS = False # close the loop for this crop -> back to the 'for-loop' without incrementing 'month' 
@@ -462,7 +534,7 @@ def ASSESS_OptimalWaterResources(crop, PRA, x):
 		x.edibleCropsWR[crop] = x.edibleCropsWR[crop]/WReval_max
 		
 	
-	# at the end of these both loops, we get an 'edibleCropsWR' dictionnary with a "WaterResources evaluation" (WReval)
+	# at the end of these both loops, we get an 'edibleCropsWR' dictionary with a "WaterResources evaluation" (WReval)
 	# for each x.edible crop. -> helps to compare, at the end, with the remaining crops.
 	
 			
@@ -472,8 +544,19 @@ def ASSESS_OptimalWaterResources(crop, PRA, x):
 
 				
 def ASSESS_NutrientsMargin(crop, PRA, x):
-	""" This function returns a list with the nutrient margin of each crop from x.edibleCrops that have ONLY POSITIVE nutrient margins.
+	"""INPUT :
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+	*	x		is the class that contains all self variables used in all VegAu's functions
+
+	FUNCTION:
+	This function returns a list with the nutrient margin of each crop from x.edibleCrops that have ONLY POSITIVE
+	nutrient margins.
 	It deletes also from x.edibleCrops every crop that would require more nutrients than the soil can provide.
+
+	OUTPUT:
+	*	x.NutrientsMargin
+	*	updated x.edibleCrops (only edible crops)
 	"""
 
 	for crop in x.edibleCrops:
@@ -533,21 +616,27 @@ def ASSESS_NutrientsMargin(crop, PRA, x):
 
 	
 		
-def ASSESS_Nutrients(x):
-	"""This function selects the crops for which there is enought nutrients in the PRA (updates the 'edibleCrops' list).
-	It updates also the 'edibleCropsSN' dictionnary ('SN' for 'Soil Nutrients') with:
+def ASSESS_Nutrients(crop, x, PRA):
+	"""INPUT :
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	x		is the class that contains all self variables used in all VegAu's functions
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+
+	FUNCTION:
+	This function selects the crops for which there is enough nutrients in the PRA (updates the 'edibleCrops' list).
+	It updates also the 'edibleCropsSN' dictionary ('SN' for 'Soil Nutrients') with:
 		*	keys = prodID
 		*	values = standardized nutrients margin: the lower the index value, the less nutrients in the soil after the crop.
 
 	"""			
 	x.NutrientsMargin = {}
 	
-	ASSESS_NutrientsMargin(crop, PRA, x)(crop, PRA, x)
-	# after this function, x.NutrientsMargin contains a key for each crop of edibleCrop for whiche there is POSITIVE nutrient margins
+	ASSESS_NutrientsMargin(crop, PRA, x)
+	# after this function, x.NutrientsMargin contains a key for each crop of edibleCrop for which there is POSITIVE nutrient margins
 	# x.edibleCrops is also updated (crops with negative nutrient margins have been deleted.
 
-	# Margin standardization, first step (finding the maximum NutrienMargin for each nutrient
-	#-> divide all by max and get a percentage with 1 the higher value):	
+	# Margin standardization, first step (finding the maximum NutrientMargin for each nutrient
+	# -> dividing all by max and get a percentage with 1 the higher value):
 
 
 	for crop in x.NutrientsMargin:
@@ -582,7 +671,17 @@ def ASSESS_Nutrients(x):
 	
 
 def SelectCrop(x):
+	"""INPUT:
+ 	*	x	is the class that contains all self variables used in all VegAu's functions
 
+ 	FUNCTION :
+ 	Selecting a crop among the 'x.edibleCrops' list according to the indices from the lists :
+ 	' x.edibleCropsWR', 'edibleCropsSN' and 'edibleCropsPnD'
+
+ 	OUTPUT :
+ 	*	crop ID of the Selected crop
+ 	*	the list 'x.edibleCompanionCrops' with thoses from the edible crops that are cover crops or companion crops
+	"""
 	
 	Final_Edibility_Index	= {}
 	edibleCoverCrops[crop]	= []
@@ -612,23 +711,23 @@ def SelectCrop(x):
 		if Final_Edibility_Index == 1:
 			FinalSelection1.append[crop]
 		elif Final_Edibility_Index >= 0.9:
-			 FinalSelection1.append[crop]
+			FinalSelection1.append[crop]
 		elif Final_Edibility_Index >= 0.8:
-			 FinalSelection1.append[crop]
+			FinalSelection1.append[crop]
 		elif Final_Edibility_Index >= 0.7:
-			 FinalSelection1.append[crop]
+			FinalSelection1.append[crop]
 		elif Final_Edibility_Index >= 0.6:
-			 FinalSelection1.append[crop]
+			FinalSelection1.append[crop]
 		elif Final_Edibility_Index >= 0.5:
-			 FinalSelection1.append[crop]
+			FinalSelection1.append[crop]
 		elif Final_Edibility_Index >= 0.4:
-			 FinalSelection1.append[crop]
+			FinalSelection1.append[crop]
 		elif Final_Edibility_Index >= 0.3:
-			 FinalSelection1.append[crop]
+			FinalSelection1.append[crop]
 		elif Final_Edibility_Index >= 0.2:
-			 FinalSelection1.append[crop]
+			FinalSelection1.append[crop]
 		elif Final_Edibility_Index >= 0.1:
-			 FinalSelection1.append[crop]
+			FinalSelection1.append[crop]
 		else:
 			FinalSelection1.append[crop]
 	
@@ -678,8 +777,15 @@ def SelectCrop(x):
 		return ratioADAPT_dict[min(ratioADAPT_list)]
 
 	
-def ASSESS_Water_CompanionCrop_for_SelectedCrop(x):	
-	"""Assessing if the x.SelectedCrop tolerates a CompanionCrop according to its WaterRequirement and the PRA's WaterResources"""
+def ASSESS_Water_CompanionCrop_for_SelectedCrop(crop, x, data, CurrentMonth):
+	"""INPUT :
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	x		is the class that contains all self variables used in all VegAu's functions
+	*	data	is the class that contains the original 'plants' and 'environment' data bases
+				from 'input[COUNTRY].py' (e.g. 'inputFR.py' for France).
+
+	FUNCTION:
+	Assessing if the x.SelectedCrop tolerates a CompanionCrop according to its WaterRequirement and the PRA's WaterResources"""
 
 
 	WaterResources_are_Sufficient = True
@@ -793,7 +899,7 @@ def ASSESS_Water_CompanionCrop_for_SelectedCrop(x):
 						x.CCedibility[crop] += 0
 					else :
 					# the crop's Water Requirements do not match with the PRA's Water Resources
-					# -> this crop is deleted from the dictionnary
+					# -> this crop is deleted from the dictionary
 						x.edibleCompanionCrops = [item for item in x.edibleCompanionCrops if item != crop] # removing the crop from 'edibleCompanionCrops'
 						month_in_GS = False # close the loop for this crop -> back to the 'for-loop' without incrementing 'month'
 					EdibilityIndexes.append(x.CCedibility[crop])
@@ -813,10 +919,15 @@ def ASSESS_Water_CompanionCrop_for_SelectedCrop(x):
 					
 
 def ASSESS_Nutrients_CompanionCrop_for_SelectedCrop(x):
-	""" If the SelectedCrop tolerates a CompanionCrop (acc. to Water Requirement and Resources), cheking if there is enough nutrients for it to grow:
+	"""INPUT :
+	*	x		is the class that contains all self variables used in all VegAu's functions
+
+	FUNCTION:
+	If the SelectedCrop tolerates a CompanionCrop (acc. to Water Requirement and Resources), cheking if there is enough nutrients for it to grow:
 	Nfix(crop) - Nremoved(crop) > x.ActualStand[PRA]['N']
 	
-	Calculates the average margin for each nutrient and for each 'edibleCrops' and associates this value with NutrientsMargin[crop][nutrient].
+	OUTPUT:
+	Average margin for each nutrient and for each 'edibleCrops' and associates this value with NutrientsMargin[crop][nutrient].
 	If a margin is negative while GSmin(x.SelectedCC), this SelectedCC is deleted from the dict 'NutrientsMargin' and 'edibleCrops'.  
 	Takes the decomposition of previous crops into account.
 	"""
@@ -843,7 +954,11 @@ def ASSESS_Nutrients_CompanionCrop_for_SelectedCrop(x):
 			
 			
 			def CC_potential_margin(x):
-				"""Calculates the average N-margin for each 'edibleCrops' and add this value in x.NutrientsMargin[crop]['N'].
+				"""INPUT :
+				*	x	is the class that contains all self variables used in all VegAu's functions
+
+				FUNCTION:
+				Calculates the average N-margin for each 'edibleCrops' and add this value in x.NutrientsMargin[crop]['N'].
 				If a crop's N-margin in negative while GSmin(crop), this crop is deleted from the dict 'NutrientsMargin' and 'edibleCrops'.  
 				Takes the decomposition of previous crops into account."""
 				
@@ -915,8 +1030,15 @@ def ASSESS_Nutrients_CompanionCrop_for_SelectedCrop(x):
 	
 
 def ASSESS_ResiduesDecomposition_of_CompanionCrop(x):					
-	"""Calculating the residues that remain after the x.SelectedCC according to the functions from the STICS model
+	"""INPUT :
+	*	x		is the class that contains all self variables used in all VegAu's functions
+
+	FUNCTION:
+	Calculating the residues that remain after the x.SelectedCC according to the functions from the STICS model
 	and the parameter described in Justes et al. (2009).
+
+	OUTPUT:
+	updated 'month' dictionary
 	"""
 
 	
@@ -940,14 +1062,19 @@ def ASSESS_ResiduesDecomposition_of_CompanionCrop(x):
 				else:
 					month[i][nutrient] += mineralizedCPK_amount/2
 				# decomposition of each nutrient have been assessed for month i 
-				 
+				
 		i += 1 # switching to next month
 
 
 
 def SelectedCC_Kill(PRA, x):
-	"""This function calculates the amounts of removed nutrients by the Selected Companion Crop while the current crop's GS.
-	It takes into account the decomposition of previous crop thanks the dictionnary month. 
+	"""INPUT :
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+	*	x		is the class that contains all self variables used in all VegAu's functions
+
+	OUTPUT:
+	Amounts of removed nutrients by the Selected Companion Crop while the current crop's GS.
+	It takes into account the decomposition of previous crop thanks the dictionary month.
 	"""
 
 	
@@ -976,9 +1103,15 @@ def SelectedCC_Kill(PRA, x):
 
 
 def update_RotatMonth_and_VERIFprodBOT(x):
-	"""Updating the dictionnary 'VERIFprodBOT', the variable 'RotatMonth' and the cells from the sheet 'PRArotat'
-	by adding the prodID of the previously selected crop from the x.GSstart[PreviouslySelectedCrop]
-	to the x.GSstart[x.SelectedCrop] non inclusive.
+	"""INPUT :
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+	*	x		is the class that contains all self variables used in all VegAu's functions
+
+	OUTPUT:
+	*	Updated dictionary 'VERIFprodBOT'
+	*	Updated variable 'RotatMonth'
+
+	NOTICE:
 	This functions comes AFTER the SelectCrop(x) !
 	"""
 	
@@ -1005,19 +1138,26 @@ def update_RotatMonth_and_VERIFprodBOT(x):
 	
 	
 def update_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x):
-	"""This function comes AFTER update_RotatMonth_and_VERIFprodBOT(x) : it creates an entry in x.VERIFprodBOT for the newly selected crop
-	if there is no one in the dictionnary and verifies if the minimum return period is respected.
+	"""INPUT :
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+	*	x		is the class that contains all self variables used in all VegAu's functions
+
+	NOTICE :
+	This function comes AFTER update_RotatMonth_and_VERIFprodBOT(x) : it creates an entry in x.VERIFprodBOT for the newly selected crop
+
+	FUNCTION:
+	If there is no one in the dictionary and verifies if the minimum return period is respected.
 	If respected : no Pest and Diseases malus
 	If not respected : +1 for this crop in the dict 'PestsDiseases_in_rotation'.
 	In both cases, the 'Duration since previous crop' returns to 0.
+
+	OUTPUT:
+	*	updated 'x.VERIFprodBOT' dictionary
+	*	updated 'PestsDiseases_in_rotation' dictionary
 	"""
 
 	print("Verifying if the minimum return period is respected...")
-	
-	
-	
-	
-	
+
 	# x.SelectedCrop is added to the list of the crops added to the rotation :
 	
 	if prodBOT(x.SelectedCrop) not in x.VERIFprodBOT.keys():
@@ -1050,15 +1190,15 @@ def update_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x):
 		
 		
 def ASSESS_PestDiseases(crop, x):
-	"""returns an index according to the risks of pests and diseases relative to a too short period between several crops
+	"""INPUT :
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	x		is the class that contains all self variables used in all VegAu's functions
+
+	OUTPUT:
+	Index according to the risks of pests and diseases relative to a too short period between several crops
 	of a same botanic family.
 	"""
 
-	
-	
-	
-	
-	
 	for crop in x.edibleCrops:
 		duration_since_previous_crop		=	x.VERIFprodBOT[prodBOT(crop)]['Duration since previous crop']
 		
@@ -1076,7 +1216,13 @@ def ASSESS_PestDiseases(crop, x):
 
 
 def ASSESS_ResiduesDecomposition_of_PreviousCrops(crop, PRA, x):
-	"""Calculates the residues that are RETURNED by the previous crop while the GS of the newly x.SelectedCrop.
+	"""INPUT :
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+	*	x		is the class that contains all self variables used in all VegAu's functions
+
+	OUTPUT:
+	Residues that are RETURNED BY THE PREVIOUS CROP while the GS of the newly x.SelectedCrop.
 	"""
 	
 	
@@ -1104,7 +1250,11 @@ def ASSESS_ResiduesDecomposition_of_PreviousCrops(crop, PRA, x):
 
 
 def ASSESS_ResiduesDecomposition_of_SelectedCrop(x):					
-	"""Calculating the residues that remain after the x.SelectedCrop according to the functions from the STICS model
+	"""INPUT :
+	*	x		is the class that contains all self variables used in all VegAu's functions
+
+	OUTPUT:
+	Residues that remain after the x.SelectedCrop according to the functions from the STICS model
 	and the parameter described in Justes et al. (2009).
 	"""
 
@@ -1128,15 +1278,21 @@ def ASSESS_ResiduesDecomposition_of_SelectedCrop(x):
 				else:
 					month[i][nutrient] += mineralizedCPK_amount
 				# decomposition of each nutrient have been assessed for month i 
-				 
+				
 		i += 1 # switching to next month
 
 
 			
 			
 def SelectedCrop_Harvest(PRA, x):
-	"""This function calculates the amounts of removed nutrients while the current crop GS.
-	It takes into account the decomposition of previous crop thanks the dictionnary month. 
+	"""INPUT :
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+	*	x		is the class that contains all self variables used in all VegAu's functions
+
+	OUTPUT:
+	Amounts of removed nutrients while the current crop GS.
+	It takes into account the decomposition of previous crop thanks the dictionary month.
 	"""
 	
 	

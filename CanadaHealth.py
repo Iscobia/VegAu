@@ -1,6 +1,6 @@
 #!/usr/bin/python3.4
 # -*-coding:Utf-8 -*
-"""This dictionnary contains all data from Canada Health for infants, kids, men and women according to their age.
+"""This dictionary contains all data from Canada Health for infants, kids, men and women according to their age.
 """
 
 Canada_Health = {

@@ -227,7 +227,7 @@ STATalt	= lambda PRA:	ENVIRONMENT[PRA,73].value
 	
 def TmaxABS(month):
 	"""TmaxABS = "Temperature maximale absolue" ("maximum absolute Temperature")
-	This fonction returns the highest Temperature recorded in the current PRA for the selected month (in °C).
+	This function returns the highest Temperature recorded in the current PRA for the selected month (in °C).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -244,7 +244,7 @@ def TmaxABS(month):
 
 def TmaxMOY(month):
 	"""TmaxMOY = "Température Maximale Moyenne" ("average highest Temperature")
-	This fonction returns the average highest daily Temperature for the selected month (in °C).
+	This function returns the average highest daily Temperature for the selected month (in °C).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -261,7 +261,7 @@ def TmaxMOY(month):
 
 def Tmoy(month):
 	"""Tmoy = "Température moyenne" ("average Temperature")
-	This fonction returns the average Temperature for the selected month (in °C).
+	This function returns the average Temperature for the selected month (in °C).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -278,7 +278,7 @@ def Tmoy(month):
 
 def TminMOY(month):
 	"""TminMOY = "Température minimale moyenne ("average lowest Temperature")
-	This fonction returns the average lowest daily Temperature for the selected month (in °C).
+	This function returns the average lowest daily Temperature for the selected month (in °C).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -295,7 +295,7 @@ def TminMOY(month):
 
 def TminABS(month):
 	"""TminABS = "Température minimale absolue" ("minimum absolute Temperature")
-	This fonction returns the lowest Temperature recorded in the current PRA for the selected month (in °C).
+	This function returns the lowest Temperature recorded in the current PRA for the selected month (in °C).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -312,7 +312,7 @@ def TminABS(month):
 
 def JOURS_sup30C(month):
 	"""JOURS_sup30C = "Nombre moyen de jours pour lesquels la température maximale est supérieure à 30°C"
-	This fonction returns the average days amount with a maximum Temperature >30°C for the selected month.
+	This function returns the average days amount with a maximum Temperature >30°C for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -329,7 +329,7 @@ def JOURS_sup30C(month):
 
 def JOURS_sup25C(month):
 	"""JOURS_sup25C = "Nombre moyen de jours pour lesquels la température maximale est supérieure à 25°C"
-	This fonction returns the average days amount with a maximum Temperature >25°C for the selected month.
+	This function returns the average days amount with a maximum Temperature >25°C for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -346,7 +346,7 @@ def JOURS_sup25C(month):
 
 def JOURS_sup0C(month):
 	"""JOURS_sup0C = "Nombre moyen de jours pour lesquels la température maximale est supérieure à 0°C"
-	This fonction returns the average days amount with an maximum Temperature >0°C for the selected month.
+	This function returns the average days amount with an maximum Temperature >0°C for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -363,7 +363,7 @@ def JOURS_sup0C(month):
 
 def JOURS_TminBelow0C(month):
 	"""JOURS_TminBelow0C = "Nombre moyen de jours pour lesquels la température minimale est inférieure à 0°C"
-	This fonction returns the average days amount with an average minimum Temperature <0°C for the selected month.
+	This function returns the average days amount with an average minimum Temperature <0°C for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -380,7 +380,7 @@ def JOURS_TminBelow0C(month):
 
 def JOURS_TminBelow_Negative_5C(month):
 	"""JOURS_TminBelow_Negative_5C = "Nombre moyen de jours pour lesquels la température minimale est inférieure à -5°C"
-	This fonction returns the average days amount with an average minimum Temperature < -5°C for the selected month.
+	This function returns the average days amount with an average minimum Temperature < -5°C for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -397,7 +397,7 @@ def JOURS_TminBelow_Negative_5C(month):
 
 def JOURS_TminBelow_Negative_10C(month):
 	"""JOURS_TminBelow_Negative_10C = "Nombre moyen de jours pour lesquels la température minimale est inférieure à -10°C"
-	This fonction returns the average days amount with an average minimum Temperature < -10°C for the selected month.
+	This function returns the average days amount with an average minimum Temperature < -10°C for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -414,7 +414,7 @@ def JOURS_TminBelow_Negative_10C(month):
 
 def Pmax(month):
 	"""Pmax = "Hauteur de Précipitations quotidiennes maximale"
-	This fonction returns the daily average maximum precipitation (in mm) for the selected month.
+	This function returns the daily average maximum precipitation (in mm) for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -431,7 +431,7 @@ def Pmax(month):
 
 def Ptot(month):
 	"""Ptot = "Hauteur de Précipitations totales moyenne mensuelle"
-	This fonction returns the average maximum precipitation (in mm) for the selected month.
+	This function returns the average maximum precipitation (in mm) for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -448,7 +448,7 @@ def Ptot(month):
 
 def Tcumul(month):
 	"""Tcumul = "Températures cumulées" (in the original file from MeteoFrance: "Degrés Jours Unifiés")
-	This fonction returns the cumulative temperatures for the selected month (in °C).
+	This function returns the cumulative temperatures for the selected month (in °C).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -465,7 +465,7 @@ def Tcumul(month):
 
 def SOLglobal(month):
 	"""SOLglobal = "Ensoleillement global" (in the original file from MeteoFrance: "Rayonnement global")
-	This fonction returns the average global radiation for the selected month (in J/cm²).
+	This function returns the average global radiation for the selected month (in J/cm²).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -482,7 +482,7 @@ def SOLglobal(month):
 
 def SOLmoy(month):
 	"""SOLmoy = "Ensoleillement moyen" (in the original file from MeteoFrance: "Durée d'insolation")
-	This fonction returns the monthly average sunshine duration for the selected month (in hours).
+	This function returns the monthly average sunshine duration for the selected month (in hours).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0
@@ -499,7 +499,7 @@ def SOLmoy(month):
 
 def ETPmoy(month):
 	"""ETPmoy = "Evapotranspiration (potentielle) moyenne mensuelle"
-	This fonction returns the average evapotranspiration for the selected month (ETP Penman in mm).
+	This function returns the average evapotranspiration for the selected month (ETP Penman in mm).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
 	'an' gives the yearly average."""
 	i=0

@@ -1,6 +1,11 @@
 #!/usr/bin/python3.4
 # -*-coding:Utf-8 -* 
+"""Module containing the functions for :
+VegAu, STEP3: Building a typical Crop Rotation for each PRA according to Climate and Soil Data
 
+ATTENTION :
+This program only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+The import of this sheet is ensured by the module 'importingODS.py'"""
 
 #########################################
 #										#
@@ -8,10 +13,10 @@
 #										#
 #########################################
 
-# Notice: Variables from the 'nutrition' dictionnary are in importedVariables.
+# Notice: Variables from the 'nutrition' dictionary are in importedVariables.
 
 from selfVariables import x
-from CanadaHealth import Canada_Health	# dictionnary containing the Dietary Reference Intakes calculated by Canada Health
+from CanadaHealth import Canada_Health	# dictionary containing the Dietary Reference Intakes calculated by Canada Health
 
 from importedVariables import *	# lambda functions to access easier to the data from the abode imported dicts
 
@@ -22,12 +27,19 @@ from importedVariables import *	# lambda functions to access easier to the data 
 #########################################
 
 
-def ASSESS_FoodNutrients(x):
-	"""This function use only the 'PRAyields' and 'NUTRITION' sheets.
-	It sums the nutrients and vitamins of all products in the appropriate variables (1 variable per nutritional feature)
-	of the dictionnary 'TotalNutrients' (each key corresponds to a nutrient, vitamin or other dietetic feature)
+def ASSESS_FoodNutrients(x, nutrition):
+	"""INPUT :
+	*	x		is the class that contains all self variables used in all VegAu's functions
+	*	nutrition	is the dictionary that has been imported from 'input[COUNTRY].py'
+					(e.g. 'inputFR.py' for France).
+
+	FUNCTION:
+	It sums the nutrients and vitamins of all products in the appropriate variables (1 variable
+	per nutritional feature) of the dictionary 'TotalNutrients' (each key corresponds to a
+	nutrient, a vitamin or another dietetic feature)
 	
-	OUTPUT: the dictionnary x.TotalNutrients with the average daily resources
+	OUTPUT:
+	the dictionary x.TotalNutrients with the average daily resources
 	"""
 	
 	DailyResources = {}
@@ -88,7 +100,7 @@ def ASSESS_FoodNutrients(x):
 		
 
 #~ def ASSESS_QTTperPERSON():
-	#~ """This function updates the 'TotalNutrients' dictionnary by dividing each nutrient amount by the total population
+	#~ """This function updates the 'TotalNutrients' dictionary by dividing each nutrient amount by the total population
 	#~ and copies the results in the sheet 'NUTRIassess' for each crop in order to keep a friendly interface to oberve the results.
 	#~ 
 	#~ OUTPUT:
@@ -143,8 +155,14 @@ def ASSESS_FoodNutrients(x):
 		#~ for nutrient in DailyIntakeAmount.keys() :
 			#~ print("	* {} of {}".format( DailyIntakeAmount[nutrient] , nutrient) )
 			
-def ASSESS_QTTperPERSON(x):
-	"""This function updates the 'TotalNutrients' dictionnary by dividing each nutrient amount by the total population.
+def ASSESS_QTTperPERSON(x, nutrition):
+	"""INPUT :
+	*	x			is the class that contains all self variables used in all VegAu's functions
+	*	nutrition	is the dictionary that has been imported from 'input[COUNTRY].py'
+					(e.g. 'inputFR.py' for France).
+
+	FUNCTION:
+	This function updates the 'TotalNutrients' dictionary by dividing each nutrient amount by the total population.
 	
 	OUTPUT:
 	* updated 'TotalNutrient' dictionnay with the average nutrient quantity per person 

@@ -174,6 +174,16 @@ p2o_moy	= lambda PRA:	environment[PRA][57]
 p2oEQUIV	= lambda PRA:	environment[PRA][295]
 #-----------------------------------------------------
 def P_med(PRA) :
+	"""This function returns the appropriate Phosphorus content in soil accroding to the soil pH of the given PRA.
+	Different extraction methods are used for P according to the soil pH:
+	*	if the PRA's average pH is acid, we use the P extract. method Dyer (called p2d in the data base)
+	*	if the PRA's average pH il neutral of alkaline, the P extract. method Olsen is favoured because (called p2o in the data base)
+	*	if no value is available for the Olsen method, then we use the Joret-Hébert method (called p2j in the data base)
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'"""
+
 	if pH(PRA) < 6.5: # if the PRA's average pH is acid, we use the P extract. method Dyer (p2d)
 		return p2d_med(PRA)
 	else: # else, if the PRA's average pH il neutral of alkaline, the P extract. method Olsen is favoured (p2o, less agressive).
@@ -204,9 +214,14 @@ STATalt	= lambda PRA:	environment[PRA][73]
 	
 def TmaxABS(month, PRA):
 	"""TmaxABS = "Temperature maximale absolue" ("maximum absolute Temperature")
-	This fonction returns the highest Temperature recorded in the current PRA for the selected month (in °C).
+	This function returns the highest Temperature recorded in the current PRA for the selected month (in °C).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'"""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][74+12]
@@ -224,9 +239,14 @@ def TmaxABS(month, PRA):
 
 def TmaxMOY(month, PRA):
 	"""TmaxMOY = "Température Maximale Moyenne" ("average highest Temperature")
-	This fonction returns the average highest daily Temperature for the selected month (in °C).
+	This function returns the average highest daily Temperature for the selected month (in °C).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'"""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][87+12]
@@ -244,9 +264,14 @@ def TmaxMOY(month, PRA):
 
 def Tmoy(month, PRA):
 	"""Tmoy = "Température moyenne" ("average Temperature")
-	This fonction returns the average Temperature for the selected month (in °C).
+	This function returns the average Temperature for the selected month (in °C).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'"""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][100+12]
@@ -264,9 +289,14 @@ def Tmoy(month, PRA):
 
 def TminMOY(month, PRA):
 	"""TminMOY = "Température minimale moyenne ("average lowest Temperature")
-	This fonction returns the average lowest daily Temperature for the selected month (in °C).
+	This function returns the average lowest daily Temperature for the selected month (in °C).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'"""
+
 	i=0
 	print("calculation of TminMOY: month = ", month)
 	if month == 'an':
@@ -285,9 +315,14 @@ def TminMOY(month, PRA):
 
 def TminABS(month, PRA):
 	"""TminABS = "Température minimale absolue" ("minimum absolute Temperature")
-	This fonction returns the lowest Temperature recorded in the current PRA for the selected month (in °C).
+	This function returns the lowest Temperature recorded in the current PRA for the selected month (in °C).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'."""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][126+12]
@@ -305,9 +340,14 @@ def TminABS(month, PRA):
 
 def JOURS_sup30C(month, PRA):
 	"""JOURS_sup30C = "Nombre moyen de jours pour lesquels la température maximale est supérieure à 30°C"
-	This fonction returns the average days amount with a maximum Temperature >30°C for the selected month.
+	This function returns the average days amount with a maximum Temperature >30°C for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'."""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][139+12]
@@ -325,9 +365,14 @@ def JOURS_sup30C(month, PRA):
 
 def JOURS_sup25C(month, PRA):
 	"""JOURS_sup25C = "Nombre moyen de jours pour lesquels la température maximale est supérieure à 25°C"
-	This fonction returns the average days amount with a maximum Temperature >25°C for the selected month.
+	This function returns the average days amount with a maximum Temperature >25°C for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'."""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][152+12]
@@ -345,9 +390,14 @@ def JOURS_sup25C(month, PRA):
 
 def JOURS_sup0C(month, PRA):
 	"""JOURS_sup0C = "Nombre moyen de jours pour lesquels la température maximale est supérieure à 0°C"
-	This fonction returns the average days amount with an maximum Temperature >0°C for the selected month.
+	This function returns the average days amount with an maximum Temperature >0°C for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'."""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][165+12]
@@ -365,9 +415,14 @@ def JOURS_sup0C(month, PRA):
 
 def JOURS_TminBelow0C(month, PRA):
 	"""JOURS_TminBelow0C = "Nombre moyen de jours pour lesquels la température minimale est inférieure à 0°C"
-	This fonction returns the average days amount with an average minimum Temperature <0°C for the selected month.
+	This function returns the average days amount with an average minimum Temperature <0°C for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'."""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][178+12]
@@ -385,9 +440,14 @@ def JOURS_TminBelow0C(month, PRA):
 
 def JOURS_TminBelow_Negative_5C(month, PRA):
 	"""JOURS_TminBelow_Negative_5C = "Nombre moyen de jours pour lesquels la température minimale est inférieure à -5°C"
-	This fonction returns the average days amount with an average minimum Temperature < -5°C for the selected month.
+	This function returns the average days amount with an average minimum Temperature < -5°C for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'."""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][191+12]
@@ -405,9 +465,14 @@ def JOURS_TminBelow_Negative_5C(month, PRA):
 
 def JOURS_TminBelow_Negative_10C(month, PRA):
 	"""JOURS_TminBelow_Negative_10C = "Nombre moyen de jours pour lesquels la température minimale est inférieure à -10°C"
-	This fonction returns the average days amount with an average minimum Temperature < -10°C for the selected month.
+	This function returns the average days amount with an average minimum Temperature < -10°C for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'."""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][204+12]
@@ -425,9 +490,14 @@ def JOURS_TminBelow_Negative_10C(month, PRA):
 
 def Pmax(month, PRA):
 	"""Pmax = "Hauteur de Précipitations quotidiennes maximale"
-	This fonction returns the daily average maximum precipitation (in mm) for the selected month.
+	This function returns the daily average maximum precipitation (in mm) for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'."""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][217+12]
@@ -445,9 +515,14 @@ def Pmax(month, PRA):
 
 def Ptot(month, PRA):
 	"""Ptot = "Hauteur de Précipitations totales moyenne mensuelle"
-	This fonction returns the average maximum precipitation (in mm) for the selected month.
+	This function returns the average maximum precipitation (in mm) for the selected month.
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'."""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][230+12]
@@ -465,9 +540,14 @@ def Ptot(month, PRA):
 
 def Tcumul(month, PRA):
 	"""Tcumul = "Températures cumulées" (in the original file from MeteoFrance: "Degrés Jours Unifiés")
-	This fonction returns the cumulative temperatures for the selected month (in °C).
+	This function returns the cumulative temperatures for the selected month (in °C).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'."""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][243+12]
@@ -485,9 +565,14 @@ def Tcumul(month, PRA):
 
 def SOLglobal(month, PRA):
 	"""SOLglobal = "Ensoleillement global" (in the original file from MeteoFrance: "Rayonnement global")
-	This fonction returns the average global radiation for the selected month (in J/cm²).
+	This function returns the average global radiation for the selected month (in J/cm²).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'."""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][256+12]
@@ -505,9 +590,14 @@ def SOLglobal(month, PRA):
 
 def SOLmoy(month, PRA):
 	"""SOLmoy = "Ensoleillement moyen" (in the original file from MeteoFrance: "Durée d'insolation")
-	This fonction returns the monthly average sunshine duration for the selected month (in hours).
+	This function returns the monthly average sunshine duration for the selected month (in hours).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'."""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][269+12]
@@ -525,9 +615,14 @@ def SOLmoy(month, PRA):
 
 def ETPmoy(month, PRA):
 	"""ETPmoy = "Evapotranspiration (potentielle) moyenne mensuelle"
-	This fonction returns the average evapotranspiration for the selected month (ETP Penman in mm).
+	This function returns the average evapotranspiration for the selected month (ETP Penman in mm).
 	'month' can be written as follows: 01, 02, 03, etc; or 1, 2, 3, etc.
-	'an' gives the yearly average."""
+	'an' gives the yearly average.
+
+	ATTENTION :
+	This function only works with the imported version of the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
+	The import of this sheet is ensured by the module 'importingODS.py'."""
+
 	i=0
 	if month == 'an':
 		return environment[PRA][282+12]

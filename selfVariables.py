@@ -3,6 +3,8 @@
 
 class x:
 	#-- from step 1:
+	all_crop_parameters_match_the_PRA_ones = True
+
 	TOLERdrought = 0
 	TOLERflood	= 0
 	edible = []
@@ -18,7 +20,7 @@ class x:
 	WRmargin_moy	= {}
 	edibleCropsWR	= {}
 	edibleCompanionCrops = {}
-	CCedibility = {}	# dictionnary from ASSESS_Water_CompanionCrop... with the different nutrients margins
+	CCedibility = {}	# dictionary from ASSESS_Water_CompanionCrop... with the different nutrients margins
 						# ---> used if the selected Companion Crop needs more nutrients than the soil can provide.
 	prodSURFACE = {}
 	RotatMonth = 0
