@@ -79,8 +79,8 @@ def PRAedibilityTest(x, data):
 	This function only works with the original file "inputFR.ods" or a file with the same layout (sheets, columns in sheets...).
 	This function tests each crop of 'plants' according to the environmental data from 'environment'."""
 
-	country		=	data.environment.keys()
-	database	=	data.plants.keys()
+	country		=	sorted(data.environment.keys())
+	database	=	sorted(data.plants.keys())
 
 
 	#===========================================================================
@@ -88,7 +88,12 @@ def PRAedibilityTest(x, data):
 
 	for PRA in country:
 		if PRA != 'headers_full' and PRA != 'headers_ID':
-
+			# =======================================================================================================================================
+			# creating new edibility lists for the current PRA
+			x.edibleCropsID[PRA] = []
+			x.edibleCropsEN[PRA] = []
+			x.edibleCropsFR[PRA] = []
+			x.edibleCropsDE[PRA] = []
 			print("Edibility assessement for the PRA {}...".format(IDPRA(PRA)))
 
 			for crop in database:
@@ -96,18 +101,9 @@ def PRAedibilityTest(x, data):
 					print("The current crop is :", crop)
 
 					#=======================================================================================================================================
-					# Creating new edibility lists for the new current crop
-					x.edible_Tmin = []
-					x.edibleCropsID[PRA] = []
-					x.edibleCropsEN[PRA] = []
-					x.edibleCropsFR[PRA] = []
-					x.edibleCropsDE[PRA] = []
-					x.prodSURFACE[crop] = 0
-
-					#=======================================================================================================================================
 					# assessement fonctions
 
-					the_selected_crop_is_a_permanent_crop = prodCAT(crop) == 1  # fruit/nut tree, shrub
+					the_selected_crop_is_a_permanent_crop = prodCAT(crop) == 1 or prodCAT(crop) == 2 # fruit/nut tree (1), shrub (2)
 					all_crop_parameters_match_the_PRA_ones = True
 
 					while all_crop_parameters_match_the_PRA_ones :
@@ -126,13 +122,15 @@ def PRAedibilityTest(x, data):
 
 						print("""This crop is edible for the current PRA ! :D""")	# if the code runs till this line, the crop is edible
 																					# because all_crop_parameters_match_the_PRA_ones == True
-
+						print("prodID(crop) = ", prodID(crop), "prod_EN(crop) = ", prod_EN(crop))
 						x.edibleCropsID[PRA].append(prodID(crop))
 						x.edibleCropsEN[PRA].append(prod_EN(crop))
 						x.edibleCropsFR[PRA].append(prod_FR(crop))
 						x.edibleCropsDE[PRA].append(prod_DE(crop))
 
 						print("Adding the PRA's surface to the 'prodSURFACE' dictionnary...")
+						if crop not in x.prodSURFACE.keys():
+							x.prodSURFACE[crop] = 0
 						x.prodSURFACE[crop] += PRAsurface(PRA)
 						print("	OK")
 						# End of the edibility assessement for the current crop --> the loop's boolean is set to False :

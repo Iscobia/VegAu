@@ -135,7 +135,7 @@ def ASSESS_Tmin_germ_forFruits(x, crop, PRA, all_crop_parameters_match_the_PRA_o
 def ASSESS_Tmin(crop, x, PRA, all_crop_parameters_match_the_PRA_ones):
 	"""Tmin(crop) assessement: is Tmin (crop) < TminMOY (PRA) ?
 	Notice: not "<=" because TminMOY is an average value: it would average that, some days, the coldest T is lower than Tmin(crop) (crop) !"""
-
+	x.edible_Tmin = []
 	i = 1
 	CurrentMonth = int(seed_from(crop))
 	while i <= GSmax(crop):
@@ -187,11 +187,11 @@ def ASSESS_Water(crop, PRA, x, all_crop_parameters_match_the_PRA_ones):
 	GS1_4	= ceil(GSmax(crop) * 0.25 )
 	GS2_4	= ceil(GSmax(crop) * 0.50 )
 	GS3_4	= ceil(GSmax(crop) * 0.75 )
-	CurrentMonth = 1
 
+	GrowingMonth = 1
 
-	while CurrentMonth <= GSmax(crop):
-
+	while GrowingMonth <= GSmax(crop):
+		CurrentMonth = seed_from(crop) + (GrowingMonth - 1) # GrowingMonth begins with 1
 		#= Determining the current stage of the GS =============================================
 		if CurrentMonth <= GS1_4 :
 			print("Kc1_4(crop) =", Kc1_4(crop))
