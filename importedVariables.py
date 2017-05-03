@@ -81,7 +81,7 @@ Tmin	= lambda prodID:	plants[prodID][42]
 period	= lambda prodID:	plants[prodID][43] # periodicity, maximum frequency to avoid pests and diseases
 seed_from	= lambda prodID:	plants[prodID][44]
 seed_to	= lambda prodID:	plants[prodID][45]
-GSmin	= lambda prodID:	plants[prodID][46]
+GSmin	= lambda prodID:	round(plants[prodID][46])
 GSmax	= lambda prodID:	plants[prodID][47]
 #~ GStot_min	= lambda prodID:	plants[prodID][48]
 #~ GStot_max	= lambda prodID:	plants[prodID][49]
@@ -298,7 +298,7 @@ def TminMOY(month, PRA):
 	The import of this sheet is ensured by the module 'importingODS.py'"""
 
 	i=0
-	print("calculation of TminMOY: month = ", month)
+	# print("calculation of TminMOY: month = ", month)
 	if month == 'an':
 		return environment[PRA][113+12]
 	else:

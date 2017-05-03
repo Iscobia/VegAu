@@ -14,10 +14,6 @@ The import of this sheet is ensured by the module 'importingODS.py'"""
 #										#
 #########################################
 
-# importing databases :
-from inputFR import environment
-from inputFR import plants
-
 from importedVariables import *	# lambda functions to access easier to the data from the abode imported dicts
 
 #########################################
@@ -114,7 +110,7 @@ def ASSESS_Tmin_germ_forFruits(x, crop, PRA):
 	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
 
 	FUNCTION:
-	If the current crop is a fruit crop, Tmin(crop) germination must be considered before the other edibility assessement:
+	If the current crop is a fruit crop, Tmin(crop) germination must be considered before the other edibility assessment:
 	if Tmin_germ(crop) > TminMOY(PRA) while the whole winter, the buds just never open !
 	TminMOY(PRA) must be lower than Tmin_germ(crop) at least one month in the winter."""
 
@@ -129,7 +125,10 @@ def ASSESS_Tmin_germ_forFruits(x, crop, PRA):
 
 
 	if prodCAT(crop) == 1 or prodCAT(crop) == 2 : #if the crop is a fruit tree crop
-		print("The current crop is a tree/shrub: verifying if winter is cold enough...")
+
+		# print("The current crop is a tree/shrub: verifying if winter is cold enough...")
+		x.edible_Tmin = []  # this list must be reset to remember that this crop does not use it and avoid misunderstanding
+
 		CurrentMonth = 11
 		GSmax = 5 # in this case, only winter is considered to see if the minimal Tgermination for fruit trees is reached at least one month in winter
 		i = 1
@@ -152,7 +151,7 @@ def ASSESS_Tmin_germ_forFruits(x, crop, PRA):
 		if True not in x.edible_Tmin:
 			x.all_crop_parameters_match_the_PRA_ones = False
 
-		print("	OK")
+		# print("	OK")
 
 
 def ASSESS_Tmin(crop, x, PRA):
@@ -162,7 +161,7 @@ def ASSESS_Tmin(crop, x, PRA):
 	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
 
 	FUNCTION:
-	Minimum Temperature assessement: is Tmin (crop) < TminMOY (PRA) ?
+	Minimum Temperature assessment: is Tmin (crop) < TminMOY (PRA) ?
 	Notice: not "<=" because TminMOY is an average value: it would average that, some days, the coldest T is
 	lower than Tmin(crop) (crop) !
 
@@ -189,28 +188,31 @@ def ASSESS_Tmin(crop, x, PRA):
 				x.edible_Tmin.append(False)
 		CurrentMonth += 1
 		GrowingMonth += 1
-	
-		PRAedibTest = []
-		count = 0
 
-		for MonthIndex, Tmin_edibility in enumerate(x.edible_Tmin):
-			if MonthIndex < (len(x.edible_Tmin) - 1) : # indexes begin with 0, so the last index will be the list length - 1
-				if Tmin_edibility == True:
-					if x.edible_Tmin[MonthIndex - 1] == Tmin_edibility:
-						count += 1
-					else:
-						PRAedibTest.append(count)
-						count = 1
-			else:								# for the last entry in the list 'x.edible_Tmin' :
-												# else, if the list does not end with 'False',
-												# the count of consecutive 'True' would not be added to the list
-				if Tmin_edibility == True:
-					PRAedibTest.append(count)
+	#-------------------------------------------------------------------
+	#--- Counting the successive month with appropriate conditions :
 
-		# --------------------------------------
+	PRAedibTest = []
+	count = 0
 
-		if max(PRAedibTest) <= GSmin(crop):
-			x.all_crop_parameters_match_the_PRA_ones = False
+	for MonthIndex, Tmin_edibility in enumerate(x.edible_Tmin):
+			if Tmin_edibility == True and x.edible_Tmin[MonthIndex - 1] == Tmin_edibility:
+					count += 1
+			elif Tmin_edibility == True : # if the first value is True (no value for x.edible_Tmin[MonthIndex - 1])
+				count += 1
+			else:
+				PRAedibTest.append(count)
+				count = 0
+
+
+	if x.edible_Tmin[-1] == True:
+		PRAedibTest.append(count)
+
+	# print("x.edible_Tmin = ", x.edible_Tmin, "GSmin(crop) = ", GSmin(crop), "PRAedibTest = ", PRAedibTest)
+	# --------------------------------------
+
+	if max(PRAedibTest) < GSmin(crop):
+		x.all_crop_parameters_match_the_PRA_ones = False
 
 
 def ASSESS_Water(crop, PRA, x):
@@ -220,7 +222,7 @@ def ASSESS_Water(crop, PRA, x):
 	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
 
 	FUNCTION:
-	Water requirement assessement: Are pecipitations and field capacity sufficient to store enough water to fulfil
+	Water requirement assessment: Are pecipitations and field capacity sufficient to store enough water to fulfil
 	the water requirement (ETc) for each ¼ of the (maximal !) total growing stage?
 
 	OUTPUT:
@@ -231,7 +233,6 @@ def ASSESS_Water(crop, PRA, x):
 
 	#~ from selfVariables import x.TOLERdrought
 	#~ from selfVariables import x.TOLERflood
-	from math import ceil
 
 	# /!\ AvailableWaterCapacity(PRA) (from 'environment') must be recalculated TAKING THE ORGANIC MATTER CONTENT INTO ACCOUNT !
 	# ~ an error occurs with the following line (TypeError: can't multiply sequence by non-int of type 'float') : problem by calling values from the 'plants' ?
@@ -255,22 +256,22 @@ def ASSESS_Water(crop, PRA, x):
 		#= Determining the current stage of the GS =============================================
 		if GrowingMonth <= GS1_4 :
 			ETc = Kc1_4(crop) * ETPmoy(CurrentMonth, PRA)
-			print("Kc1_4(crop) =", Kc1_4(crop))
-			print("ETPmoy(CurrentMonth,PRA) =",ETPmoy(CurrentMonth, PRA))
-			print("Assessing the Water Resources for the 1st quarter of the growing season...")
+			# print("Kc1_4(crop) =", Kc1_4(crop))
+			# print("ETPmoy(CurrentMonth,PRA) =",ETPmoy(CurrentMonth, PRA))
+			# print("Assessing the Water Resources for the 1st quarter of the growing season...")
 
 
 		elif GrowingMonth <= GS2_4 :
 			ETc		= Kc2_4(crop) * ETPmoy(CurrentMonth, PRA)
-			print("Assessing the Water Resources for the 2nd quarter of the growing season...")
+			# print("Assessing the Water Resources for the 2nd quarter of the growing season...")
 
 		elif GrowingMonth <= GS3_4 :
 			ETc= Kc3_4(crop)*ETPmoy(CurrentMonth, PRA)
-			print("Assessing the Water Resources for the 3rd quarter of the growing season...")
+			# print("Assessing the Water Resources for the 3rd quarter of the growing season...")
 
 		else:
 			ETc= Kc4_4(crop)*ETPmoy(CurrentMonth, PRA)
-			print("Assessing the Water Resources for the 4th quarter of the growing season...")
+			# print("Assessing the Water Resources for the 4th quarter of the growing season...")
 		#========================================================================================
 
 		if CurrentMonth % 12 == 0:
@@ -298,32 +299,65 @@ def ASSESS_Water(crop, PRA, x):
 	#========================================================
     #=== ELIBILTY OF THE PRA concerning the Water Resources:
 
-	print("Verifying if the Water Resources match with the Tmin supported by the crop...")
-	print("x.edible_Tmin = ",x.edible_Tmin)
-	print("edible_WaterRqt = ", edible_WaterRqt)
+	# print("Verifying if the Water Resources match with the Tmin supported by the crop...")
+	# print("GSmin(crop) = ", GSmin(crop))
+	# print("edible_WaterRqt = ", edible_WaterRqt)
 
 	PRAedibTest = 0
 	the_selected_crop_is_a_permanent_crop = prodCAT(crop) == 1 or prodCAT(crop) == 2  # fruit/nut tree (1), shrub (2)
 
 	if the_selected_crop_is_a_permanent_crop :
-		pass
+		x.edible_Tmin = []
+		PRAedibTest = []
+		count = 0
+
+		for MonthIndex, Water_edibility in enumerate(edible_WaterRqt):
+			if Water_edibility == True and edible_WaterRqt[MonthIndex - 1] == Water_edibility:
+				count += 1
+			elif Water_edibility == True:  # if the first value is True (no value for x.edible_Tmin[MonthIndex - 1])
+				count += 1
+			else:
+				PRAedibTest.append(count)
+				count = 0
+
+		if edible_WaterRqt[-1] == True:
+			PRAedibTest.append(count)
+
+		# print("edible_WaterRqt = ", edible_WaterRqt, "GSmin(crop) = ", GSmin(crop), "PRAedibTest = ", PRAedibTest)
+		# --------------------------------------
+
+		if max(PRAedibTest) < GSmin(crop):
+			x.all_crop_parameters_match_the_PRA_ones = False
+
+
+	#== IF THE CURRENT CROP IS NOT A TREE OR A SHRUB =====================================
+
 	else:
+		# print("x.edible_Tmin = ", x.edible_Tmin)
 		PRAedibTest = []
 		count = 0
 
 		for MonthIndex, Tmin_edibility in enumerate(x.edible_Tmin):
-			if edible_WaterRqt[MonthIndex] == True and Tmin_edibility == True:
-				if edible_WaterRqt[MonthIndex - 1] == edible_WaterRqt[MonthIndex] and x.edible_Tmin[MonthIndex - 1] == Tmin_edibility:
+
+			if edible_WaterRqt[MonthIndex - 1] == edible_WaterRqt[MonthIndex] and x.edible_Tmin[MonthIndex - 1] == Tmin_edibility:
+
+				if edible_WaterRqt[MonthIndex] == True and Tmin_edibility == True:
 					count += 1
-				else:
-					PRAedibTest.append(count)
-					count = 1
+
+			elif edible_WaterRqt[MonthIndex] == True and Tmin_edibility == True:
+				count += 1
+
+			else:
+				PRAedibTest.append(count)
+				count = 0
+
+		if x.edible_Tmin[-1] == True:
+			PRAedibTest.append(count)
 
 		# --------------------------------------
 
-		if max(PRAedibTest) <= GSmin(crop):
+		if max(PRAedibTest) < GSmin(crop):
 			x.all_crop_parameters_match_the_PRA_ones = False
-
 
 
 
@@ -334,7 +368,7 @@ def ASSESS_pH(crop, PRA, x):
 	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
 
 	FUNCTION:
-	pH(PRA) requirement assessement: the median pH(PRA) value of the current PRA must be included in the range
+	pH(PRA) requirement assessment: the median pH(PRA) value of the current PRA must be included in the range
 	[pHmin(crop):pHmax(crop)] of the current crop.
 
 	OUTPUT:
@@ -344,9 +378,9 @@ def ASSESS_pH(crop, PRA, x):
 
 	if pHmin(crop) >= pH(PRA) >= pHmax(crop):
 		x.all_crop_parameters_match_the_PRA_ones = False
-		print("The soil pH of this PRA does not match to the crop requirements.")
-
-	print("The soil pH of this PRA matches to the crop requirements !")
+		# print("The soil pH of this PRA does not match to the crop requirements.")
+	# else:
+		# print("The soil pH of this PRA matches to the crop requirements !")
 
 
 
@@ -377,10 +411,12 @@ def PriorityAssessement(x, data):
 	#==============================================================================================================
 	#== Calculating the NATIONAL AGRICULTURAL SURFACE + QUANTITY PER INHABITANT (kg/week)
 
+	print("Priority Assessment...")
 
 	#=== Total agricultural surface:
 	TotalAgriSurface = 0
-	country = data.environment.keys()
+	country = sorted(data.environment.keys())
+	database = sorted(data.plants.keys())
 
 	#=== Calculating the average quantity per inhabitant (don't take the age into account):
 	Population = 714683  # Source: INSEE, estimation of the French population the 1st of January 2017)
@@ -389,13 +425,15 @@ def PriorityAssessement(x, data):
 
 	for PRA in country:
 		if PRA != 'headers_full' and PRA != 'headers_ID':
+
+			print("PRA {} (departement {}, region {})...".format( PRA, NOM_DEPT(PRA), NOM_REG(PRA) ) )
 			TotalAgriSurface += PRAsurface(PRA)
 
 
 	#==============================================================================================================
 
 
-	for crop in data.plants.keys():
+	for crop in database:
 		#~ CROProw = CROProw_PLANTS(crop)
 		#~ CROPcol = CROPcol_PRAedibility(crop)
 
@@ -403,145 +441,126 @@ def PriorityAssessement(x, data):
 
 			#======================================================================================
 
-			# calculating the quantity per Inhabitant in kg from the Yields in tons :
-			QttPerInhabitant = ((expYIELD(crop) * 1000 * x.prodSURFACE[crop])/Population)/WeeksInYear
-
-
-			#======================================================================================
-			#=== Calculating the "adaptation ratio" for the current CROP
-
-			### calculating the "ratio of adaptability" for EACH CROP to give priority to crops which have the lowest ratio:
-			### surface of the territory where the crop could grow/total agricultural surface in France :
-			print("Calculating the 'ratio of adaptability' of {} (index = {})...".format( prod_EN(crop) ), crop)
-
-			ratioADAPT = x.prodSURFACE[crop] / TotalAgriSurface
-			data.plants[crop]['ratioADAPT'] = ratioADAPT
-
-			print("	ratioADAPT =", ratioADAPT)
-
-
-			#======================================
-			#=== FRUIT TREES
-
-			if prodCAT(crop) == 1:
-				print("""The current crop is a tree or shrub.
-				Calculating the priority indices...""")
-
-				if ratioADAPT <= 0.6:
-					# 'PRIORITYgeneral' = high priority
-					data.plants[crop]['PRIORITYgeneral'] = 1
-					print("	'PRIORITYgeneral' = ", 1)
-
-				elif 0.6 <= ratioADAPT <= 0.8 :
-					 # 'PRIORITYgeneral' = mid priority
-					data.plants[crop]['PRIORITYgeneral'] = 2
-					print("	'PRIORITYgeneral' = ", 2)
-
-				else:
-					# 'PRIORITYgeneral' = low priority
-					data.plants[crop]['PRIORITYgeneral'] = 3
-					print("	'PRIORITYgeneral' = ", 3)
-
-				#END if (priority general acc. to ratioADAPT
-
-
-				# 'PRIORITYfruits' assessement :
-				if prodTYP(crop) is 'Fruit tree':
-					if QttPerInhabitant < 1:
-						data.plants[crop]['PRIORITYfruits'] = 1
-						print("	'PRIORITYfruits' = ", 1)
-
-					else:
-						if 1 < QttPerInhabitant < 2:
-							data.plants[crop]['PRIORITYfruits'] = 2
-							print("	'PRIORITYfruits' = ", 2)
-
-						elif 2 < QttPerInhabitant < 3:
-							data.plants[crop]['PRIORITYfruits'] = 3
-							print("	'PRIORITYfruits' = ", 3)
-
-						elif 3 < QttPerInhabitant < 4:
-							data.plants[crop]['PRIORITYfruits'] = 4
-							print("	'PRIORITYfruits' = ", 4)
-
-						else: # if more than 4kg/person/week
-							data.plants[crop]['PRIORITYfruits'] = 5
-							print("	'PRIORITYfruits' = ", 5)
-							#END if (fruit trees, PRIORITYfruits)
-
-				elif prodTYP(crop) is 'Berry':
-					if QttPerInhabitant < 0.1:
-						data.plants[crop]['PRIORITYfruits'] = 1
-						print("	'PRIORITYfruits' = ", 1)
-
-					else:
-						if  0.1 < QttPerInhabitant < 0.2:
-							data.plants[crop]['PRIORITYfruits'] = 2
-							print("	'PRIORITYfruits' = ", 2)
-
-						elif 0.2 < QttPerInhabitant < 0.3:
-							data.plants[crop]['PRIORITYfruits'] = 3
-							print("	'PRIORITYfruits' = ", 3)
-
-						elif 0.3 < QttPerInhabitant < 0.4:
-							data.plants[crop]['PRIORITYfruits'] = 4
-							print("	'PRIORITYfruits' = ", 4)
-
-						elif 0.4 < QttPerInhabitant:
-							data.plants[crop]['PRIORITYfruits'] = 5
-							print("	'PRIORITYfruits' = ", 5)
-
-						#END if (Berries, PRIORITYfruits)
-
-				data.plants[crop]['PRIORITYtextile'] = 0 # not a textile
-				#END if ('PRIORITYfruits' assessement)
-
-
-			#======================================
-			#=== TEXTILE FIBRES
-
-			elif prodTYP(crop) == 'Fiber crop':
-
-				print("""The current crop is a fibre crop.
-				Calculating the priority indices...""")
-
-				# PRIORITYgeneral assessement:
-				if ratioADAPT <= 0.6:
-					data.plants[crop]['PRIORITYgeneral'] = 1
-					print("	PRIORITYgeneral = ", 1)
-
-				elif 0.6 <= ratioADAPT <= 0.8 :
-					data.plants[crop]['PRIORITYgeneral'] = 2
-					print("	PRIORITYgeneral = ", 2)
-
-				else:
-					data.plants[crop]['PRIORITYgeneral'] = 3
-					print("	PRIORITYgeneral = ", 3)
-
-				# PRIORITYtextile assessement:
-				if prodID(crop) is FBRcott:
-					data.plants[crop]['PRIORITYtextile'] = 1
-					print("	PRIORITYtextile = ", 1)
-
-				if prodID(crop) is FBRflx:
-					data.plants[crop]['PRIORITYtextile'] = 2
-					print("	PRIORITYtextile = ", 2)
-
-				else:
-					data.plants[crop]['PRIORITYtextile'] = 3
-					print("	PRIORITYtextile = ", 3)
-
-				data.plants[crop]['PRIORITYfruits']	= 0 # not a fruit/nut tree
-				#END if ('PRIORITYtextile' assessement)
-
-
-			#======================================
-			#===  OTHER CROPS
+			if crop not in x.prodSURFACE:
+				x.prodSURFACE[crop] = 0
+				pass
 			else:
-				print("""The current crop is current cash crop.
-					PRIORITYgeneral = 3""")
-				data.plants[crop]['PRIORITYgeneral'] = 3 # low priority
-				data.plants[crop]['PRIORITYfruits']	= 0 # not a fruit/nut tree
-				data.plants[crop]['PRIORITYtextile'] = 0 # not a textile
+				# calculating the quantity per Inhabitant in kg from the Yields in tons :
+				QttPerInhabitant = ((expYIELD(crop) * 1000 * x.prodSURFACE[crop])/Population)/WeeksInYear
 
 
+				#======================================================================================
+				#=== Calculating the "adaptation ratio" for the current CROP
+
+				### calculating the "ratio of adaptability" for EACH CROP to give priority to crops which have the lowest ratio:
+				### surface of the territory where the crop could grow/total agricultural surface in France :
+
+				ratioADAPT = x.prodSURFACE[crop] / TotalAgriSurface
+				data.plants[crop]['ratioADAPT'] = ratioADAPT
+
+				#======================================
+				#=== FRUIT TREES
+
+				if prodCAT(crop) == 1 or prodCAT(crop) == 2 :
+					# print("""The current crop is a tree or shrub.
+					# Calculating the priority indices...""")
+
+					if ratioADAPT <= 0.6:
+						# 'PRIORITYgeneral' = high priority
+						data.plants[crop]['PRIORITYgeneral'] = 1
+
+					elif 0.6 <= ratioADAPT <= 0.8 :
+						# 'PRIORITYgeneral' = mid priority
+						data.plants[crop]['PRIORITYgeneral'] = 2
+
+					else:
+						# 'PRIORITYgeneral' = low priority
+						data.plants[crop]['PRIORITYgeneral'] = 3
+
+					#END if (priority general acc. to ratioADAPT
+
+
+					# 'PRIORITYfruits' assessment :
+					if prodTYP(crop) is 'Fruit tree':
+						if QttPerInhabitant < 1:
+							data.plants[crop]['PRIORITYfruits'] = 1
+
+						else:
+							if 1 < QttPerInhabitant < 2:
+								data.plants[crop]['PRIORITYfruits'] = 2
+
+							elif 2 < QttPerInhabitant < 3:
+								data.plants[crop]['PRIORITYfruits'] = 3
+
+							elif 3 < QttPerInhabitant < 4:
+								data.plants[crop]['PRIORITYfruits'] = 4
+
+							else: # if more than 4kg/person/week
+								data.plants[crop]['PRIORITYfruits'] = 5
+								#END if (fruit trees, PRIORITYfruits)
+
+					elif prodTYP(crop) is 'Berry':
+
+						if QttPerInhabitant < 0.1:
+							data.plants[crop]['PRIORITYfruits'] = 1
+
+						else:
+							if  0.1 < QttPerInhabitant < 0.2:
+								data.plants[crop]['PRIORITYfruits'] = 2
+
+							elif 0.2 < QttPerInhabitant < 0.3:
+								data.plants[crop]['PRIORITYfruits'] = 3
+
+							elif 0.3 < QttPerInhabitant < 0.4:
+								data.plants[crop]['PRIORITYfruits'] = 4
+
+							elif 0.4 < QttPerInhabitant:
+								data.plants[crop]['PRIORITYfruits'] = 5
+
+							#END if (Berries, PRIORITYfruits)
+
+					data.plants[crop]['PRIORITYtextile'] = 0 # not a textile
+					#END if ('PRIORITYfruits' assessment)
+
+
+				#======================================
+				#=== TEXTILE FIBRES
+
+				elif prodTYP(crop) == 'Fiber crop':
+
+					# PRIORITYgeneral assessment:
+					if ratioADAPT <= 0.6:
+						data.plants[crop]['PRIORITYgeneral'] = 1
+
+					elif 0.6 <= ratioADAPT <= 0.8 :
+						data.plants[crop]['PRIORITYgeneral'] = 2
+
+					else:
+						data.plants[crop]['PRIORITYgeneral'] = 3
+
+					# PRIORITYtextile assessment:
+					if prodID(crop) is 'FBRcott':
+						data.plants[crop]['PRIORITYtextile'] = 1
+
+					if prodID(crop) is 'FBRflx':
+						data.plants[crop]['PRIORITYtextile'] = 2
+
+					else:
+						data.plants[crop]['PRIORITYtextile'] = 3
+
+					data.plants[crop]['PRIORITYfruits']	= 0 # not a fruit/nut tree
+					#END if ('PRIORITYtextile' assessment)
+
+
+				#======================================
+				#===  OTHER CROPS
+				else:
+					#print("""The current crop is current cash crop.
+					#	PRIORITYgeneral = 3""")
+					data.plants[crop]['PRIORITYgeneral'] = 3 # low priority
+					data.plants[crop]['PRIORITYfruits']	= 0 # not a fruit/nut tree
+					data.plants[crop]['PRIORITYtextile'] = 0 # not a textile
+
+				print("{} ({}) : 'ratio of adaptability' = {}, 'PRIORITYgeneral' = {}, 'PRIORITYfruits' = {}, 'PRIORITYtextile' = {}".format(prod_EN(crop), crop, data.plants[crop]['ratioADAPT'], data.plants[crop]['PRIORITYgeneral'], data.plants[crop]['PRIORITYfruits'], data.plants[crop]['PRIORITYtextile']))
+
+				# END if (in x.prodSURFACE)
