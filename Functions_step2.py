@@ -145,7 +145,7 @@ def ETc_GSmin(crop, month, x, PRA):
 
 	month 	= month % 12
 	month	= month - x.EndPreviousCrop + 1
-	# -> index of the current month of the rotation - index of the month of the begining of the rotation
+	# -> index of the current month of the rotation - index of the month of the beginning of the rotation
 	# e.g.: x.EndPreviousCrop = 3 (March) and the current month is 5 (Mai) : we are 5-3+1 = 3nd month of the GSmin(crop) (March + April + Mai).  
 	
 	if month <= GSmin(crop):
@@ -431,7 +431,7 @@ def FindOptimalSeedingDate(crop, PRA, x):
 		No seeding date of any x.edible crop matches exactly with the end of the previous crop:
 		Looking for the shortest delay among seeding dates of the PRA's x.edible crops...""")
 		# restoring the 'edibleCrops' list
-		x.edibleCrops	=	list(x.edibleCropsID[PRA])
+		x.edibleCrops	=	list(sorted(x.edibleCropsID[PRA]))
 		# creating a new dictionary which bounds the crops indexes to the duration btw their earliest seeding date
 		# and the earliest end date of the previous crop's GS:
 		SelectEarlierPlanting = {}
@@ -446,10 +446,10 @@ def FindOptimalSeedingDate(crop, PRA, x):
 		for crop in SelectEarlierPlanting.keys():
 		# adding ID of the crops for which the earliest planting date are the earliest ones among the other PRA's x.edible crops:
 			if SelectEarlierPlanting[crop] == PlantingDate_1:
-				x.edibleCrops.append(int( crop ))
+				x.edibleCrops.append(crop)
 				x.GSstart = PlantingDate_1
 			if SelectEarlierPlanting[crop] == PlantingDate_2:
-				x.edibleCrops.append(int( crop ))
+				x.edibleCrops.append(crop)
 				x.GSstart = PlantingDate_2
 		print("	OK")
 

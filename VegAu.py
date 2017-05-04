@@ -251,8 +251,7 @@ def ASSESS_PRArotation(x, data):
 	x.ActualStand	=	{}
 	month = {}
 		
-	country		=	data.environment.keys()
-	database 	=	data.plants.keys()
+	country		=	sorted(data.environment.keys())
 	
 	#===========================================================================
 	#===========================================================================
