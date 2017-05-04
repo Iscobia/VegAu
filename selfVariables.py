@@ -25,7 +25,7 @@ class x:
 	prodSURFACE = {}
 	RotatMonth = 0
 	GSstart = 0
-	EndPreviousCrop = 0
+	# EndPreviousCrop = 0
 	EndPreviousCrop_earlier = 0
 	EndPreviousCrop_later = 0
 	SelectedCrop =	None

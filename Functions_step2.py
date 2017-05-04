@@ -108,9 +108,9 @@ def ETc_GSmax(crop, month, x, PRA):
 	"""
 	
 	month 	= month % 12
-	month	= month - x.EndPreviousCrop + 1
+	month	= month - x.EndPreviousCrop_earlier + 1
 	# -> index of the current month of the rotation - index of the month of the begining of the rotation
-	# e.g.: x.EndPreviousCrop = 3 (March) and the current month is 5 (Mai) : we are 5-3+1 = 3nd month of the GSmax(crop) (March + April + Mai).
+	# e.g.: x.EndPreviousCrop_earlier = 3 (March) and the current month is 5 (Mai) : we are 5-3+1 = 3nd month of the GSmax(crop) (March + April + Mai).
 
 	maximum_growing_season_duration = GSmax(crop)
 
@@ -140,23 +140,31 @@ def ETc_GSmin(crop, month, x, PRA):
 
 	OUTPUT :
 	ETc value for each month of the growing season calculated in STEP2 (not STEP1 !!) for the rotation simulation.
-	It uses the variable x.EndPreviousCrop and GSmin(crop) to calculate its position in the GS duration.
+	It uses the variable x.EndPreviousCrop_earlier and GSmin(crop) to calculate its position in the GS duration.
 	"""
 
 	month 	= month % 12
-	month	= month - x.EndPreviousCrop + 1
+	month	= month - x.EndPreviousCrop_earlier + 1
 	# -> index of the current month of the rotation - index of the month of the beginning of the rotation
 	# e.g.: x.EndPreviousCrop = 3 (March) and the current month is 5 (Mai) : we are 5-3+1 = 3nd month of the GSmin(crop) (March + April + Mai).  
-	
-	if month <= GSmin(crop):
-		return Kc4_4(crop) * ETPmoy(month, PRA)			# ETc = Kc (index) ETPmoy (in mm)
-	elif month <= GS3_4:
-		return Kc3_4(crop) * ETPmoy(month, PRA)
-	elif month <= GS2_4 :
-		return Kc2_4(crop) * ETPmoy(month, PRA)
-	elif month <= GS1_4:
-		return Kc1_4(crop) * ETPmoy(month, PRA)
+	minimum_growing_season_duration = GSmin(crop)
+	GS1_4	= round(x.EndPreviousCrop_earlier + minimum_growing_season_duration * 0.25 )
+	GS2_4	= round(x.EndPreviousCrop_earlier + minimum_growing_season_duration * 0.50 )
+	GS3_4	= round(x.EndPreviousCrop_earlier + minimum_growing_season_duration * 0.75 )
 
+
+	if month <= GS1_4:
+		return Kc1_4(crop) * ETPmoy(month, PRA)  # ETc = Kc (index) ETPmoy (in mm)
+
+	elif month <= GS2_4:
+		return Kc2_4(crop) * ETPmoy(month, PRA)
+
+	elif month <= GS3_4:
+
+		return Kc3_4(crop) * ETPmoy(month, PRA)
+
+	elif month <= seed_from(crop) + GSmin(crop):
+		return Kc4_4(crop) * ETPmoy(month, PRA)
 
 #================================================================================================================
 
@@ -502,11 +510,9 @@ def ASSESS_OptimalWaterResources(crop, PRA, x):
 			ETc_shortest_GS = ETc_GSmin(crop, month, x, PRA)
 
 			# Setting up the Water Resource quality :
-			WaterResources_acceptable = ((ETc_shortest_GS * x.TOLERdrought) < WaterResources(month, PRA) < (
-				ETc_shortest_GS * x.TOLERflood))
+			WaterResources_acceptable = ((ETc_shortest_GS * x.TOLERdrought) < WaterResources(month, PRA) < (ETc_shortest_GS * x.TOLERflood))
 
-			WaterResources_ideal = (
-				ETc_shortest_GS < WaterResources(month, PRA) < (ETc_shortest_GS * x.TOLERflood))
+			WaterResources_ideal = (ETc_shortest_GS < WaterResources(month, PRA) < (ETc_shortest_GS * x.TOLERflood))
 
 			if WaterResources_ideal:
 				x.edibleCropsWR[crop] += 4
@@ -526,6 +532,7 @@ def ASSESS_OptimalWaterResources(crop, PRA, x):
 					del x.edibleCropsWR[crop]
 					break # close the loop for this crop -> back to the 'for-loop' without incrementing 'month'
 				month += 1
+			else :
 
 
 	# calculating x.WRmargin_moy:
