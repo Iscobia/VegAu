@@ -30,6 +30,8 @@ class x:
 	EndPreviousCrop_later = 0
 	SelectedCrop =	None
 	SelectedCC	=	None
+
+	decomposition_month = {}
 	ActualStand = {}
 	totalYields = {}
 	PestsDiseases_in_rotation = {}
@@ -43,5 +45,5 @@ class x:
 
 	#-- from step 3: (cf Functions_step3)
 	MinimumDailyIntakeAmount	= {}  # dict taking 15% of each Recommended Daily Intake Amount as the minimum Intake (acc. to European Union Comission)
-	DailyRessources = {}
+	DailyResources = {}
 	results = {}

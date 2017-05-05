@@ -149,6 +149,537 @@ corgequiv_moy	= lambda PRA:	environment[PRA][34]
 corgequiv_med	= lambda PRA:	environment[PRA][35]
 OM_moy	= lambda PRA:	environment[PRA][34]
 OM_med	= lambda PRA:	environment[PRA][35]
+
+
+def OM_retention_capacity(x, PRA):
+	"""Returns the retention capacity of the PRA's soil according to its content in Organic Matter. This function
+	has been written according to the book "Bodenkundliche Kartierleitung, fünfte Auflage", Ad-hoc-AG Boden Hannover 2005.
+
+	This function uses the dictionary x.ActualStand to take the right OM stand into account while the rotation."""
+
+	soil_type = SoilType_DE(PRA)
+	organic_carbon = x.ActualStand[PRA]['OM'] / 10  # given in g/kg --> converting per thousand in percent
+
+	# according to the Hill Laboratory, Organic Matter (%) = Organic Carbon (%) x 1.72
+	organic_matter = (organic_carbon * 1.72)
+
+	h2 = organic_matter <= 4  # Very Low (< 2) and Low (2 to 4)
+	h3 = 4 <= organic_matter <= 10  # Medium
+	h4 = 10 <= organic_matter <= 20  # High
+	# h5 = 20 < organic_matter  # Very high
+
+	if environment[PRA][72] != '':
+		return int(environment[PRA][72])
+
+	else:
+		if soil_type == 'Ss':
+			if h2:
+				environment[PRA][72] = 1
+				return 1
+
+			elif h3:
+				environment[PRA][72] = 3
+				return 3
+
+			elif h4:
+				environment[PRA][72] = 4
+				return 4
+
+			else:
+				environment[PRA][72] = 5
+				return 5
+
+		elif soil_type == 'Sl2':
+			if h2:
+				environment[PRA][72] = 2
+				return 2
+
+			elif h3:
+				environment[PRA][72] = 3
+				return 3
+
+			elif h4:
+				environment[PRA][72] = 4
+				return 4
+
+			else:
+				environment[PRA][72] = 6
+				return 6
+
+		elif soil_type == 'Sl3':
+			if h2:
+				environment[PRA][72] = 1
+				return 1
+			elif h3:
+				environment[PRA][72] = 3
+				return 3
+
+			elif h4:
+				environment[PRA][72] = 4
+				return 4
+
+			else:
+				environment[PRA][72] = 6
+				return 6
+
+		elif soil_type == 'Sl4':
+			if h2:
+				environment[PRA][72] = 2
+				return 2
+			elif h3:
+				environment[PRA][72] = 4
+				return 4
+
+			elif h4:
+				environment[PRA][72] = 5
+				return 5
+
+			else:
+				environment[PRA][72] = 6
+				return 6
+
+		elif soil_type == 'Slu':
+			if h2:
+				environment[PRA][72] = 1
+				return 1
+
+			elif h3:
+				environment[PRA][72] = 2
+				return 2
+
+			elif h4:
+				environment[PRA][72] = 4
+				return 4
+
+			else:
+				environment[PRA][72] = 6
+				return 6
+
+		elif soil_type == 'St2':
+			if h2:
+				environment[PRA][72] = 3
+				return 3
+
+			elif h3:
+				environment[PRA][72] = 4
+				return 4
+
+			elif h4:
+				environment[PRA][72] = 5
+				return 5
+
+			else:
+				environment[PRA][72] = 7
+				return 7
+
+		elif soil_type == 'St3':
+			if h2:
+				environment[PRA][72] = 2
+				
+
+			elif h3:
+				environment[PRA][72] = 4
+				
+
+			elif h4:
+				environment[PRA][72] = 6
+				
+
+			else:
+				environment[PRA][72] = 9
+				
+
+		elif soil_type == 'Su2':
+			if h2:
+				environment[PRA][72] = 2
+				
+
+			elif h3:
+				environment[PRA][72] = 3
+				
+
+			elif h4:
+				environment[PRA][72] = 4
+				
+
+			else:
+				environment[PRA][72] = 6
+				
+
+		elif soil_type == 'Su3':
+			if h2:
+				environment[PRA][72] = 1
+				
+			elif h3:
+				environment[PRA][72] = 3
+				
+
+			elif h4:
+				environment[PRA][72] = 3
+				
+
+			else:
+				environment[PRA][72] = 4
+				
+
+		elif soil_type == 'Su4':
+			if h2:
+				environment[PRA][72] = 1
+				
+			elif h3:
+				environment[PRA][72] = 2
+				
+
+			elif h4:
+				environment[PRA][72] = 3
+				
+
+			else:
+				environment[PRA][72] = 4
+				
+
+		elif soil_type == 'Ls2':
+			if h2:
+				environment[PRA][72] = 1
+				
+			elif h3:
+				environment[PRA][72] = 3
+				
+
+			elif h4:
+				environment[PRA][72] = 5
+				
+
+			else:
+				environment[PRA][72] = 8
+				
+
+		elif soil_type == 'Ls3':
+			if h2:
+				environment[PRA][72] = 1
+				
+			elif h3:
+				environment[PRA][72] = 3
+				
+
+			elif h4:
+				environment[PRA][72] = 5
+				
+
+			else:
+				environment[PRA][72] = 8
+				
+
+		elif soil_type == 'Ls4':
+			if h2:
+				environment[PRA][72] = 2
+				
+			elif h3:
+				environment[PRA][72] = 4
+				
+
+			elif h4:
+				environment[PRA][72] = 6
+				
+
+			else:
+				environment[PRA][72] = 8
+				
+
+		elif soil_type == 'Lt2':
+			if h2:
+				environment[PRA][72] = 3
+				
+			elif h3:
+				environment[PRA][72] = 5
+				
+
+			elif h4:
+				environment[PRA][72] = 8
+				
+
+			else:
+				environment[PRA][72] = 10
+				
+
+		elif soil_type == 'Lt3':
+			if h2:
+				environment[PRA][72] = 2
+				
+			elif h3:
+				environment[PRA][72] = 4
+				
+
+			elif h4:
+				environment[PRA][72] = 8
+				
+
+			else:
+				environment[PRA][72] = 11
+				
+
+		elif soil_type == 'Lts':
+			if h2:
+				environment[PRA][72] = 3
+				
+			elif h3:
+				environment[PRA][72] = 5
+				
+
+			elif h4:
+				environment[PRA][72] = 7
+				
+
+			else:
+				environment[PRA][72] = 9
+				
+
+		elif soil_type == 'Lu':
+			if h2:
+				environment[PRA][72] = 3
+				
+			elif h3:
+				environment[PRA][72] = 5
+				
+
+			elif h4:
+				environment[PRA][72] = 7
+				
+
+			else:
+				environment[PRA][72] = 8
+				
+
+		elif soil_type == 'Uu':
+			if h2:
+				environment[PRA][72] = 1
+				
+			elif h3:
+				environment[PRA][72] = 2
+				
+
+			elif h4:
+				environment[PRA][72] = 3
+				
+
+			else:
+				environment[PRA][72] = 4
+				
+
+		elif soil_type == 'Uls':
+			if h2:
+				environment[PRA][72] = 3
+				
+			elif h3:
+				environment[PRA][72] = 4
+				
+
+			elif h4:
+				environment[PRA][72] = 4
+				
+
+			else:
+				environment[PRA][72] = 7
+				
+
+		elif soil_type == 'Us':
+			if h2:
+				environment[PRA][72] = 1
+				
+			elif h3:
+				environment[PRA][72] = 2
+				
+
+			elif h4:
+				environment[PRA][72] = 3
+				
+
+			else:
+				environment[PRA][72] = 4
+				
+
+		elif soil_type == 'Ut2':
+			if h2:
+				environment[PRA][72] = 1
+				
+			elif h3:
+				environment[PRA][72] = 1
+				
+
+			elif h4:
+				environment[PRA][72] = 2
+				
+
+			else:
+				environment[PRA][72] = 4
+				
+
+		elif soil_type == 'Ut3':
+			if h2:
+				environment[PRA][72] = 1
+				
+			elif h3:
+				environment[PRA][72] = 1
+				
+
+			elif h4:
+				environment[PRA][72] = 2
+				
+
+			else:
+				environment[PRA][72] = 4
+				
+
+		elif soil_type == 'Ut4':
+			if h2:
+				environment[PRA][72] = 2
+				
+			elif h3:
+				environment[PRA][72] = 3
+				
+
+			elif h4:
+				environment[PRA][72] = 4
+				
+
+			else:
+				environment[PRA][72] = 6
+				
+
+		elif soil_type == 'Tt':
+			if h2:
+				environment[PRA][72] = 2
+				
+			elif h3:
+				environment[PRA][72] = 4
+				
+
+			elif h4:
+				environment[PRA][72] = 5
+				
+
+			else:
+				environment[PRA][72] = 7
+				
+
+		elif soil_type == 'Tl':
+			if h2:
+				environment[PRA][72] = 2
+				
+			elif h3:
+				environment[PRA][72] = 4
+				
+
+			elif h4:
+				environment[PRA][72] = 6
+				
+
+			else:
+				environment[PRA][72] = 8
+				
+
+		elif soil_type == 'Tu2':
+			if h2:
+				environment[PRA][72] = 1
+				
+			elif h3:
+				environment[PRA][72] = 3
+				
+
+			elif h4:
+				environment[PRA][72] = 5
+				
+
+			else:
+				environment[PRA][72] = 8
+				
+
+		elif soil_type == 'Tu3':
+			if h2:
+				environment[PRA][72] = 2
+				
+			elif h3:
+				environment[PRA][72] = 4
+				
+
+			elif h4:
+				environment[PRA][72] = 7
+				
+
+			else:
+				environment[PRA][72] = 9
+				
+
+		elif soil_type == 'Tu4':
+			if h2:
+				environment[PRA][72] = 5
+				
+			elif h3:
+				environment[PRA][72] = 5
+				
+
+			elif h4:
+				environment[PRA][72] = 6
+				
+
+			else:
+				environment[PRA][72] = 8
+				
+
+		elif soil_type == 'Ts2':
+			if h2:
+				environment[PRA][72] = 2
+				
+			elif h3:
+				environment[PRA][72] = 4
+				
+
+			elif h4:
+				environment[PRA][72] = 6
+				
+
+			else:
+				environment[PRA][72] = 8
+				
+
+		elif soil_type == 'Ts3':
+			if h2:
+				environment[PRA][72] = 2
+				
+			elif h3:
+				environment[PRA][72] = 5
+				
+
+			elif h4:
+				environment[PRA][72] = 7
+				
+
+			else:
+				environment[PRA][72] = 9
+				
+
+		elif soil_type == 'Ts4':
+			if h2:
+				environment[PRA][72] = 2
+				
+			elif h3:
+				environment[PRA][72] = 4
+				
+
+			elif h4:
+				environment[PRA][72] = 7
+				
+
+			else:
+				environment[PRA][72] = 9
+
+		else:
+			print("ERROR : the soil type of the PRA {} cannot be found in the database.".format(PRA))
+			return 1
+
+		return environment[PRA][72]
+		
+
 cued_moy	= lambda PRA:	environment[PRA][36]
 cued_med	= lambda PRA:	environment[PRA][37]
 feed_med	= lambda PRA:	environment[PRA][38]
@@ -202,13 +733,147 @@ pH	= lambda PRA:	environment[PRA][63]
 BDETM_pH	= lambda PRA:	environment[PRA][64] # gives the pH9000 for the PRA, obviously the more recent of both BDETM variables
 #~ BDETM_pH0010	= lambda PRA:	environment[PRA][65]
 #~ BDEM_pHmoy	= lambda PRA:	environment[PRA][66]
-#~ argile	= lambda PRA:	environment[PRA][67]
+#~ argile	= lambda PRA:	ENVIRONMENT[PRA][67]
 #~ sable	= lambda PRA:	environment[PRA][68]
 #~ limon	= lambda PRA:	environment[PRA][69]
 SoilType_DE	= lambda PRA:	environment[PRA][70]
 AvailableWaterCapacity	= lambda PRA:	environment[PRA][71]
 AWC	= lambda PRA:	environment[PRA][71]
-AWC_SoilOnly	= lambda PRA:	environment[PRA][71]
+# AWC_SoilOnly	= lambda PRA:	environment[PRA][71]
+
+def AWC_SoilOnly(PRA):
+	"""Returns the retention capacity of the PRA's soil according to its soil texture. This function
+	has been written according to the book "Bodenkundliche Kartierleitung, fünfte Auflage",
+	Ad-hoc-AG Boden Hannover 2005, Table 70.
+
+	This function uses the dictionary x.ActualStand to take the right OM stand into account while the rotation."""
+
+	soil_type = SoilType_DE(PRA)
+
+	if soil_type != '' :
+		return round(environment[PRA][71])
+
+	else:
+		if soil_type == 'Ss':
+			environment[PRA][71] = 11
+			return 11
+
+		elif soil_type == 'Sl2':
+			environment[PRA][71] = 25
+			return 25
+
+		elif soil_type == 'Sl3':
+			environment[PRA][71] = 27
+			return 27
+
+		elif soil_type == 'Sl4':
+			environment[PRA][71] = 30
+			return 30
+
+		elif soil_type == 'Slu':
+			environment[PRA][71] = 33
+			return 33
+
+		elif soil_type == 'St2':
+			environment[PRA][71] = 22
+			return 22
+
+		elif soil_type == 'St3':
+			environment[PRA][71] = 30
+			return 30
+
+		elif soil_type == 'Su2':
+			environment[PRA][71] = 23
+			return 23
+
+		elif soil_type == 'Su3':
+			environment[PRA][71] = 29
+			return 29
+		elif soil_type == 'Su4':
+			environment[PRA][71] = 32
+			return 32
+		elif soil_type == 'Ls2':
+			environment[PRA][71] = 34
+			return 34
+
+		elif soil_type == 'Ls3':
+			environment[PRA][71] = 33
+			return 33
+
+		elif soil_type == 'Ls4':
+			environment[PRA][71] = 32
+			return 32
+		elif soil_type == 'Lt2':
+			environment[PRA][71] = 36
+			return 36
+
+		elif soil_type == 'Lt3':
+			environment[PRA][71] = 39
+			return 39
+
+		elif soil_type == 'Lts':
+			environment[PRA][71] = 37
+			return 37
+
+		elif soil_type == 'Lu':
+			environment[PRA][71] = 36
+			return 36
+
+		elif soil_type == 'Uu':
+			environment[PRA][71] = 38
+			return 38
+
+		elif soil_type == 'Uls':
+			environment[PRA][71] =35
+			return 35
+
+		elif soil_type == 'Us':
+			environment[PRA][71] = 35
+			return 35
+
+		elif soil_type == 'Ut2':
+			environment[PRA][71] = 37
+			return 37
+
+		elif soil_type == 'Ut3':
+			environment[PRA][71] = 37
+			return 37
+
+		elif soil_type == 'Ut4':
+			environment[PRA][71] = 37
+			return 37
+
+		elif soil_type == 'Tt':
+			environment[PRA][71] = 43
+			return 43
+
+		elif soil_type == 'Tl':
+			environment[PRA][71] = 41
+			return 41
+
+		elif soil_type == 'Tu2':
+			environment[PRA][71] = 42
+			return 42
+
+		elif soil_type == 'Tu3':
+			environment[PRA][71] = 38
+			return 38
+
+		elif soil_type == 'Tu4':
+			environment[PRA][71] = 37
+			return 37
+
+		elif soil_type == 'Ts2':
+			environment[PRA][71] = 39
+			return 39
+		elif soil_type == 'Ts3':
+			environment[PRA][71] = 37
+			return 37
+
+		elif soil_type == 'Ts4':
+			environment[PRA][71] = 32
+			return 32
+
 # Welkepunkt_pF4,2	= lambda PRA:	environment[PRA][72]
 STATalt	= lambda PRA:	environment[PRA][73]
 	

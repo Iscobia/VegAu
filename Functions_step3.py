@@ -42,7 +42,7 @@ def ASSESS_FoodNutrients(x, nutrition):
 	the dictionary x.TotalNutrients with the average daily resources
 	"""
 	
-	DailyResources = {}
+	x.DailyResources = {}
 	totalPopulation = 64859599
 	
 	for crop in x.totalYields.keys(): # for each column/crop in PRAyields

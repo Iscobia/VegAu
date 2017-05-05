@@ -109,6 +109,9 @@ def PRAedibilityTest(x, data):
 			x.edibleCropsEN[PRA] = []
 			x.edibleCropsFR[PRA] = []
 			x.edibleCropsDE[PRA] = []
+			x.ActualStand[PRA] = {"N": nmin_med(PRA), "P": P_med(PRA), "K": K_med(PRA), "Na": nao_med(PRA),
+								  "Mg": mgo_med(PRA), "Ca": cao_med(PRA), "Mn": mned_med(PRA), "Fe": feed_med(PRA),
+								  "Cu": cued_med(PRA), "OM": corgox_med(PRA)}
 			print("Edibility assessment for the PRA {}...".format(IDPRA(PRA)))
 
 			for crop in database:
@@ -249,7 +252,7 @@ def ASSESS_PRArotation(x, data):
 	x.EndPreviousCrop_earlier	= 3 # simulation begins in March
 	x.EndPreviousCrop_later	= 3 # simulation begins in March
 	x.ActualStand	=	{}
-	month = {}
+	decomposition_month = {}
 		
 	country		=	sorted(data.environment.keys())
 	
@@ -259,7 +262,9 @@ def ASSESS_PRArotation(x, data):
 	for PRA in country:
 		if PRA != 'headers_full' and PRA != 'headers_ID':
 			print("Building a rotation for PRA n°{}...".format(IDPRA(PRA)))
-			#~ PRA = PRArow_ENVIRONMENT(pra)
+
+			#=========================================================================
+			#= Setting up each variable
 
 			x.edibleCrops = list(x.edibleCropsID[PRA])
 			x.rotat[PRA] = []
@@ -272,11 +277,30 @@ def ASSESS_PRArotation(x, data):
 			PestsDiseases_in_rotation = {}	# dictionary that will assign each crop index to YIELD depreciating index if it is  subject to Pest and Diseases risks.
 			PestsDiseases_total = 0
 
+
+
 			x.ActualStand[PRA] = {"N": nmin_med(PRA), "P": P_med(PRA), "K": K_med(PRA), "Na": nao_med(PRA), "Mg": mgo_med(PRA), "Ca": cao_med(PRA), "Mn": mned_med(PRA), "Fe": feed_med(PRA), "Cu": cued_med(PRA), "OM": corgox_med(PRA)}
 			NutrientsSufficient = True  # taken into account in ASSESS_NutrientsMargin(crop, PRA, x)()
+
+			#=========================================================================
+			#= Preparing the dict x.decomposion_month :
+
+			i = 1
+			# to avoid an infinite number of months in the dict 'month', the loop stops automatically after 8 years (96 months):
+			while i < 97:
+				x.decomposition_month[i] = {}
+
+				for nutrient in x.ActualStand[PRA]:
+					x.decomposition_month[i][nutrient] = 0
+
+				i += 1
+
+			#=========================================================================
+
+
 			try :
 				the_selected_crop_is_a_permanent_crop = prodCAT(PreviouslySelectedCrop) == 1 # fruit/nut tree, shrub
-			except KeyError:
+			except KeyError: # if there is no "Previously Selected Crop", VegAu has to proceed with the rotation simulation
 				the_selected_crop_is_a_permanent_crop = False
 			x.edibleCompanionCrops	= []
 
@@ -286,7 +310,7 @@ def ASSESS_PRArotation(x, data):
 
 				if the_selected_crop_is_a_permanent_crop:
 
-					print("The Selected Crop is a permanent crop. Assessing crop impacts for the Current year...")
+					print("The Selected Crop is a permanent crop. Assessing crop impacts for the Current year (RotatMonth = {})...".format(x.RotatMonth))
 
 					#~ CROProw = CROProw_PLANTS(x.SelectedCrop)
 					#~ CROPcol = CROPcol_PRAedibility(x.SelectedCrop)
@@ -297,9 +321,24 @@ def ASSESS_PRArotation(x, data):
 					###########################
 
 					x.edibleCrops=[x.SelectedCrop]
+
+					print("Simulating the Nutrients gain and removal...")
 					ASSESS_Nutrients(crop, x, PRA)
 					SelectedCrop_Harvest(PRA, x)
 					x.totalYields[x.SelectedCrop] += expYIELD(x.SelectedCrop) * x.WRmargin_moy[x.SelectedCrop]
+
+					# =======================================================================================================
+					# yet, we can update VERIFYprodBOT, x.RotatMonth and the cells from PRArotat by adding the prodID of the previously selected crop
+					# from the seed_from(PreviouslySelectedCrop) to the seed_from(x.SelectedCrop) non inclusive:
+
+					print("Updating x.RotatMonth and x.VERIFprodBOT...")
+
+					update_RotatMonth_and_VERIFprodBOT(x)
+					# now, x.RotatMonth corresponds to the duration from the begining of the rotation up to x.GSstart[x.SelectedCrop]
+
+					print("RotatMonth = ", x.RotatMonth)
+					print("Updating x.VERIFprodBOT and PestsDiseases_in_rotation...")
+					update_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x)
 					print("	OK")
 
 
@@ -308,118 +347,124 @@ def ASSESS_PRArotation(x, data):
 				else:
 					x.GSstart = {} # key = CROProw, value = first month of the potential growing season
 
-					for crop in x.edibleCropsID[PRA]:
+					print("Looking for the Optimal Seeding Date... (edible crops are : {})". format(x.edibleCrops))
+					# selecting the crops according to their planting date:
+					FindOptimalSeedingDate(PRA, x)
+					# after this function, we have :
+					#		* a list 'edibleCrops' with the index of every edible crop for this x.rotation's time according to the sawing/planting date.
+					#		* a dictionary 'GSstart' with: keys = crop's indexes, values = first GS month
 
-						# selecting the crops according to their planting date:
-						FindOptimalSeedingDate(crop, PRA, x)
-						# after this function, we have :
-						#		* a list 'edibleCrops' with the index of every edible crop for this x.rotation's time according to the sawing/planting date.
-						#		* a dictionary 'GSstart' with: keys = crop's indexes, values = first GS month
+					print("Looking for the optimal Water Resources... (edible crops are : {})". format(x.edibleCrops))
+					ASSESS_OptimalWaterResources(PRA, x)
+					# after this function, we get:
+					#		* an updated "x.edibleCrops' list
+					#		* an 'edibleCropsWR' dictionary with :
+					#			*	keys = CROProw
+					#			*	values = standardized "WaterResources evaluation" (WReval)
 
+					print("Checking the nutrient requirements for remaining crops... (edible crops are : {})". format(x.edibleCrops))
 
-						ASSESS_OptimalWaterResources(crop, PRA, x)
-						# after this function, we get:
-						#		* an updated "x.edibleCrops' list
-						#		* an 'edibleCropsWR' dictionary with :
-						#			*	keys = CROProw
-						#			*	values = standardized "WaterResources evaluation" (WReval)
+					ASSESS_Nutrients(x, PRA)
+					# after this function, we get:
+					#	* an updated "x.edibleCrops' list
+					#	* an 'edibleCropsSN' dictionary ('SN' for 'Soil Nutrients') with:
+					#			*	keys = CROProw
+					#			*	values = standardized nutrients margin
 
+					# -> All these intermediary functions helps to compare the remaining crops thanks an homogenized Index and the priority Indexes
 
+					print("Checking the pests and diseases risks for remaining crops... (edible crops are : {})". format(x.edibleCrops))
 
-						ASSESS_Nutrients(x)
-						# after this function, we get:
-						#	* an updated "x.edibleCrops' list
-						#	* an 'edibleCropsSN' dictionary ('SN' for 'Soil Nutrients') with:
-						#			*	keys = CROProw
-						#			*	values = standardized nutrients margin
+					ASSESS_PestDiseases(x)
+					# returns an updated ediblePnD dictionary with, for each crop, an index according to the risks of pests and diseases
+					# relative to a too short period between several crops of a same botanic family
 
-						# -> All these intermediary functions helps to compare the remaining crops thanks an homogenized Index and the priority Indexes
+					print("Selecting the best crop for the {}th month of the Rotation ({})...".format(x.RotatMonth, MonthID(x.RotatMonth)))
 
+					x.SelectedCrop = SelectCrop(x)
+					# This function selects the best crop according to the previously calculated indexes and the Priority indexes.
 
+					print("The selected crop is : {} ({}).".format(prod_EN(x.SelectedCrop), prodID(x.SelectedCrop)))
 
-						ASSESS_PestDiseases(crop, x)
-						# returns an updated ediblePnD dictionary with, for each crop, an index according to the risks of pests and diseases
-						# relative to a too short period between several crops of a same botanic family
-
-
-						x.SelectedCrop = SelectCrop(x)
-						# This function selects the best crop according to the previously calculated indexes and the Priority indexes.
-						CROProw = x.SelectedCrop # in case there are still some lost CROProw...
-						CROPcol = x.SelectedCrop + 6
-						CROPcol_yields = x.SelectedCrop + 2
-
-
-
-						# indicating the earlier and the later month for the end of this crop for the next one:
-						# this is calculated before the next crop to capture the GStot values of this crop and not the next one.
-						x.EndPreviousCrop_earlier = int((x.RotatMonth + GSmin(x.SelectedCrop)) % 12)
-						x.EndPreviousCrop_later	= ADAPT_EndGS_later(x)
-
-
-						# assessing if there is possible to mix the x.SelectedCrop with a CompanionCrop
-						ASSESS_Water_CompanionCrop_for_SelectedCrop(crop, x, data, CurrentMonth)
-						ASSESS_Nutrients_CompanionCrop_for_SelectedCrop(x)
-
-						#------------------------------------------------------------------------
-
-						YIELD =  expYIELD(x.SelectedCrop) * x.WRmargin_moy[x.SelectedCrop]	# adapt the yield proportionnaly to the Water Resources quality
-
-						ASSESS_ResiduesDecomposition_of_PreviousCrops(crop, PRA, x)
-
-						SelectedCC_Kill(PRA, x) # the selected Companion Crop is cut at the same time as the Selected Cash Crop is harvested
-						SelectedCrop_Harvest(PRA, x)	# updates 'ActualStand'
-												# /!\ CAUTION: if there is a x.SelectedCC, SelectedCC_Kill(PRA, x) modifies 'ActualStand' !
-												#		----> SelectedCC_Kill(PRA, x) must run BEFORE SelectedCrop_Harvest(PRA, x) !!
+					# CROProw = x.SelectedCrop # in case there are still some lost CROProw...
+					# CROPcol = x.SelectedCrop + 6
+					# CROPcol_yields = x.SelectedCrop + 2
 
 
 
-						print("Calculating the yield for the Selected Crop...")
-						YIELD *= x.edibleCropsPnD[x.SelectedCrop]	# adapt the yield proportionnaly to the Pests and Diseases risks.
-						x.totalYields[x.SelectedCrop] += YIELD
+					# indicating the earlier and the later month for the end of this crop for the next one:
+					# this is calculated before the next crop to capture the GStot values of this crop and not the next one.
 
-						# Notice: Yields are in tons, not in t/ha anymore ! -> preparation for the assessment of the nutritional requirements
+					x.EndPreviousCrop_earlier = int((x.RotatMonth + GSmin(x.SelectedCrop)) % 12)
+					x.EndPreviousCrop_later	= ADAPT_EndGS_later(x)
 
+					print("It will mature until the {}th (earlier : {}) or the {}th (later : {}) month of the rotation.".
+						  format(x.EndPreviousCrop_earlier, MonthID(x.EndPreviousCrop_earlier), x.EndPreviousCrop_later, MonthID(x.EndPreviousCrop_later) ))
 
-						# indicates the earlier and the later month for the end of this crop for the next one:
-						# this is calculated before the next crop to capture the GStot values of this crop and not the next one.
-						x.EndPreviousCrop_earlier = int((x.RotatMonth + GSmin(x.SelectedCrop)) % 12)
-						x.EndPreviousCrop_later	= ADAPT_EndGS_later(x)
+					# assessing if there is possible to mix the x.SelectedCrop with a CompanionCrop
+					ASSESS_Water_CompanionCrop_for_SelectedCrop(x, data, CurrentMonth)
+					ASSESS_Nutrients_CompanionCrop_for_SelectedCrop(x)
 
+					#------------------------------------------------------------------------
 
-						#=======================================================================================================
-						# Taking into account the WaterRequirement on the GS and the Next Crop -> adapting x.EndPreviousCrop_later
+					YIELD =  expYIELD(x.SelectedCrop) * x.WRmargin_moy[x.SelectedCrop]	# adapt the yield proportionnaly to the Water Resources quality
 
-						print("Adapting the later selected crop's harvest date according to the PRA's water ressources...")
+					ASSESS_ResiduesDecomposition_of_PreviousCrops(PRA, x)
 
-						month = int(x.RotatMonth)
-						month_in_GS = ( month <= (x.GSstart[x.SelectedCrop] + GSmax(x.SelectedCrop)) )
-						while month_in_GS: # same syntaxe as in the function ASSESS_OptimalWaterResources(crop, PRA, x)
-							if ETc_GSmax(crop, month, x, PRA) * x.TOLERdrought(x.SelectedCrop) < WaterResources(month) < ETc_GSmax(crop, month, x, PRA) * x.TOLERflood(x.SelectedCrop):
-								pass
-							else:
-								x.EndPreviousCrop_later = int(month)
-
-						print("	OK")
+					SelectedCC_Kill(PRA, x) # the selected Companion Crop is cut at the same time as the Selected Cash Crop is harvested
+					SelectedCrop_Harvest(PRA, x)	# updates 'ActualStand'
+											# /!\ CAUTION: if there is a x.SelectedCC, SelectedCC_Kill(PRA, x) modifies 'ActualStand' !
+											#		----> SelectedCC_Kill(PRA, x) must run BEFORE SelectedCrop_Harvest(PRA, x) !!
 
 
 
-						#=======================================================================================================
-						# yet, we can update VERIFYprodBOT, x.RotatMonth and the cells from PRArotat by adding the prodID of the previously selected crop
-						# from the seed_from(PreviouslySelectedCrop) to the seed_from(x.SelectedCrop) non inclusive:
+					print("Calculating the yield for the Selected Crop...")
+					YIELD *= x.edibleCropsPnD[x.SelectedCrop]	# adapt the yield proportionnaly to the Pests and Diseases risks.
+					x.totalYields[x.SelectedCrop] += YIELD
 
-						update_RotatMonth_and_VERIFprodBOT(x)
-						# now, x.RotatMonth corresponds to the duration from the begining of the rotation up to x.GSstart[x.SelectedCrop]
-
-						update_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x)
-						# This function creates an entry in x.VERIFprodBOT for the newly selected crop if there is no one in the dictionary
-						# and verifies if the minimum return period is respected.
-						# 		* If respected : no Pest and Diseases malus
-						# 		* If not respected : +1 for this crop in the dict 'PestsDiseases_in_rotation'.
-						# In both cases, the 'Duration since previous crop' returns to 0 (because it is yet the 'previous crop' for the potential next ones).()
+					# Notice: Yields are in tons, not in t/ha anymore ! -> preparation for the assessment of the nutritional requirements
 
 
-						#Saving the x.SelectedCrop as "Previously Selected Crop" for the next loop:
-						PreviouslySelectedCrop = int(x.SelectedCrop)
+					# indicates the earlier and the later month for the end of this crop for the next one:
+					# this is calculated before the next crop to capture the GStot values of this crop and not the next one.
+					x.EndPreviousCrop_earlier = int((x.RotatMonth + GSmin(x.SelectedCrop)) % 12)
+					x.EndPreviousCrop_later	= ADAPT_EndGS_later(x)
+
+
+					#=======================================================================================================
+					# Taking into account the WaterRequirement on the GS and the Next Crop -> adapting x.EndPreviousCrop_later
+
+					print("Adapting the later selected crop's harvest date according to the PRA's water ressources...")
+
+					month = int(x.RotatMonth)
+					month_in_GS = ( month <= (x.GSstart[x.SelectedCrop] + GSmax(x.SelectedCrop)) )
+					while month_in_GS: # same syntax as in the function ASSESS_OptimalWaterResources(crop, PRA, x)
+						if ETc_GSmax(crop, month, x, PRA) * x.TOLERdrought(x.SelectedCrop) < WaterResources(month, PRA, crop, x) < ETc_GSmax(crop, month, x, PRA) * x.TOLERflood(x.SelectedCrop):
+							pass
+						else:
+							x.EndPreviousCrop_later = int(month)
+
+					print("	OK")
+
+
+
+					#=======================================================================================================
+					# yet, we can update VERIFYprodBOT, x.RotatMonth and the cells from PRArotat by adding the prodID of the previously selected crop
+					# from the seed_from(PreviouslySelectedCrop) to the seed_from(x.SelectedCrop) non inclusive:
+
+					update_RotatMonth_and_VERIFprodBOT(x)
+					# now, x.RotatMonth corresponds to the duration from the begining of the rotation up to x.GSstart[x.SelectedCrop]
+
+					update_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x)
+					# This function creates an entry in x.VERIFprodBOT for the newly selected crop if there is no one in the dictionary
+					# and verifies if the minimum return period is respected.
+					# 		* If respected : no Pest and Diseases malus
+					# 		* If not respected : +1 for this crop in the dict 'PestsDiseases_in_rotation'.
+					# In both cases, the 'Duration since previous crop' returns to 0 (because it is yet the 'previous crop' for the potential next ones).()
+
+
+					#Saving the x.SelectedCrop as "Previously Selected Crop" for the next loop:
+					PreviouslySelectedCrop = int(x.SelectedCrop)
 
 				#END while (Nutrient Sufficient)
 
@@ -436,7 +481,7 @@ def ASSESS_PRArotation(x, data):
 
 
 
-if __name__ == '__main__':
+if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__main__' " WHEN IT WORKS !!
 	#==================================================================================================================================
 	### STEP 1
 	### creating the sheets for the edibility and yield assessment and importing the automatic columns creation + associated functions:

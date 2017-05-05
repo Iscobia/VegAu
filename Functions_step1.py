@@ -24,8 +24,29 @@ from importedVariables import *	# lambda functions to access easier to the data 
 
 #================================================================================================================
 
-def WaterResources(month, PRA):
-	return Ptot(month, PRA)
+def WaterResources(month, PRA, crop, x):
+	"""Returns the water resources for a PRA (input : PRA ID) while the given month (month number, from 1 to 12).
+	The water resources are assumed to be the amount of water from the rainfall if it does not exceed the field capacity.
+	If rainfall exceeds the field capacity, only the field capacity will be taken into account."""
+
+
+	# Taking the Soil Type into account :
+	AWC_SoilType	=	AWC_SoilOnly(PRA) # unit : L/m²/10cm depth --> mm/10cm of rooting depth
+
+	# Taking the OM content into account :
+	AWC_OM			=	OM_retention_capacity(x, PRA) # unit : L/m²/10cm depth --> mm/10cm of rooting depth
+
+	# Calculating the total available water capacity including the rooting depth
+	maximum_available_water_capacity =	( AWC_SoilType + AWC_OM ) * ( rootDEPTH(crop)/10 )
+
+	rainfall = Ptot(month, PRA)
+
+	if maximum_available_water_capacity <= rainfall:
+		return maximum_available_water_capacity
+	else:
+		return rainfall
+	# as it is difficult to know exactly which amount of water could really be absorbed by the plant, we will assume that
+	# the half of the water is lost because of evaporation and
 
 
 def CORRseed_to(crop):
@@ -38,6 +59,8 @@ def CORRseed_to(crop):
 
 	if seed_from(crop) < seed_to(crop):
 		return seed_to(crop) + 12
+	else:
+		return seed_to(crop)
 
 
 #================================================================================================================
@@ -276,7 +299,7 @@ def ASSESS_Water(crop, PRA, x):
 
 		if CurrentMonth % 12 == 0:
 			#--------------------------------------
-			if x.TOLERdrought * ETc <= WaterResources(12, PRA) <= ETc * x.TOLERflood:
+			if x.TOLERdrought * ETc <= WaterResources(12, PRA, crop) <= ETc * x.TOLERflood:
 				edible_WaterRqt.append(True)
 			else:
 				edible_WaterRqt.append(False)
@@ -284,7 +307,7 @@ def ASSESS_Water(crop, PRA, x):
 
 		else:
 			#--------------------------------------
-			if x.TOLERdrought * ETc <= WaterResources(CurrentMonth%12, PRA) <= ETc * x.TOLERflood:
+			if x.TOLERdrought * ETc <= WaterResources(CurrentMonth%12, PRA, crop) <= ETc * x.TOLERflood:
 				edible_WaterRqt.append(True)
 			else:
 				edible_WaterRqt.append(False)
