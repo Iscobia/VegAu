@@ -30,6 +30,7 @@ class x:
 	EndPreviousCrop_later = 0
 	SelectedCrop =	None
 	SelectedCC	=	None
+	PreviouslySelectedCrop = None
 
 	decomposition_month = {}
 	ActualStand = {}

@@ -106,9 +106,8 @@ def ETc_GSmax(crop, month, x, PRA):
 	ETc value for each month of the growing season calculated in STEP2 (not STEP1 !!) for the rotation simulation.
 	It uses the variable x.EndPreviousCrop and GSmax(crop) to calculate its position in the GS duration.
 	"""
-	
-	month 	= month % 12
-	month	= month - x.EndPreviousCrop_earlier + 1
+
+	month	= month % 12 - x.EndPreviousCrop_earlier % 12 + 1
 	# -> index of the current month of the rotation - index of the month of the begining of the rotation
 	# e.g.: x.EndPreviousCrop_earlier = 3 (March) and the current month is 5 (Mai) : we are 5-3+1 = 3nd month of the GSmax(crop) (March + April + Mai).
 
@@ -143,8 +142,7 @@ def ETc_GSmin(crop, month, x, PRA):
 	It uses the variable x.EndPreviousCrop_earlier and GSmin(crop) to calculate its position in the GS duration.
 	"""
 
-	month 	= month % 12
-	month	= month - x.EndPreviousCrop_earlier + 1
+	month	= month % 12 - x.EndPreviousCrop_earlier % 12 + 1
 	# -> index of the current month of the rotation - index of the month of the beginning of the rotation
 	# e.g.: x.EndPreviousCrop = 3 (March) and the current month is 5 (Mai) : we are 5-3+1 = 3nd month of the GSmin(crop) (March + April + Mai).  
 	minimum_growing_season_duration = GSmin(crop)
@@ -374,7 +372,7 @@ def mineralizedN(crop, month):
 	gamma	=	k * Y * (Wb - h * Wh) / Wr / (k - λ)
 	
 	
-	return returnedN(crop) * (alpha - beta	* exp(-k*t)- gamma * exp(-λt) )
+	return returnedN(crop) * (alpha - beta	* exp(-k*t)- gamma * exp(-λ*t) )
 
 
 
@@ -409,29 +407,29 @@ def FindOptimalSeedingDate(PRA, x):
 	is before the latest end of the previous crop's GS
 	"""
 
-	
-	print("Looking for the Optimal Seeding Date for each edible crop...")
 
-	
 	for crop in x.edibleCropsID[PRA]:
 		# assessing if the current crop can be planted before the end of the previous crop's GS.
 		# Else, it is deleted from the list 'edibleCrops'.
 
-		seed_to = CORRseed_to(crop)  # makes sure that seed_to(crop) > seed_from(crop)
-		seeding_season_starts_before_the_end_of_the_previous_crop = (x.EndPreviousCrop_earlier)%12 > seed_from(crop)
-		ends_after_its_shorter_GS_duration = x.EndPreviousCrop_earlier <= round(seed_to) <= x.EndPreviousCrop_later
+		# seed_to = CORRseed_to(crop)  # makes sure that seed_to(crop) > seed_from(crop)
+		seeding_season_starts_before_the_end_of_the_previous_crop = (x.EndPreviousCrop_earlier) > seed_from(crop)
+		ends_after_its_shorter_GS_duration = x.EndPreviousCrop_earlier <= round(seed_to(crop)) <= x.EndPreviousCrop_later
 
-		if x.EndPreviousCrop_earlier <= seed_from(crop) <= x.EndPreviousCrop_later: 
+		if x.EndPreviousCrop_earlier%12 <= seed_from(crop)%12 <= x.EndPreviousCrop_later%12 :
+
 			if x.EndPreviousCrop_earlier < seed_from(crop):
-				x.GSstart	= seed_from(crop)
+				x.GSstart[crop]	= seed_from(crop)
 			elif x.EndPreviousCrop_earlier == seed_from(crop):
-				x.GSstart	= seed_from(crop) + 1
+				x.GSstart[crop]	= seed_from(crop) + 1
+
 		elif seeding_season_starts_before_the_end_of_the_previous_crop and ends_after_its_shorter_GS_duration :
-			x.GSstart	= x.EndPreviousCrop_earlier + 1
+			x.GSstart[crop]	= x.EndPreviousCrop_earlier + 1
+
 		else:
 			x.edibleCrops = [x for x in x.edibleCrops if x != crop]
 			
-	print("	OK")
+	print("""This PRA has edible crops which can be planted without any delay : """, x.edibleCrops)
 	
 	#=========================================================================================
 	
@@ -449,7 +447,10 @@ def FindOptimalSeedingDate(PRA, x):
 		# and the earliest end date of the previous crop's GS:
 		SelectEarlierPlanting = {}
 		for crop in x.edibleCrops:
-			SelectEarlierPlanting[crop] = seed_from(crop) - x.EndPreviousCrop_earlier
+			if seed_from(crop) < x.EndPreviousCrop_later:
+				SelectEarlierPlanting[crop] = (seed_from(crop) + 12) - x.EndPreviousCrop_later
+			else:
+				SelectEarlierPlanting[crop] = seed_from(crop) - x.EndPreviousCrop_later
 		# selecting the earliest planting date among the crops from the 'SelectEarlierPlanting' dictionary:
 		PlantingDate_1 = sorted(SelectEarlierPlanting.values())[0]
 		PlantingDate_2 = sorted(SelectEarlierPlanting.values())[1]
@@ -460,11 +461,13 @@ def FindOptimalSeedingDate(PRA, x):
 		# adding ID of the crops for which the earliest planting date are the earliest ones among the other PRA's x.edible crops:
 			if SelectEarlierPlanting[crop] == PlantingDate_1:
 				x.edibleCrops.append(crop)
-				x.GSstart = PlantingDate_1
-			if SelectEarlierPlanting[crop] == PlantingDate_2:
+				x.GSstart[crop] = PlantingDate_1
+			elif SelectEarlierPlanting[crop] == PlantingDate_2:
 				x.edibleCrops.append(crop)
-				x.GSstart = PlantingDate_2
-		print("	OK")
+				x.GSstart[crop] = PlantingDate_2
+		print("""	OK
+		This PRA has no edible crops which can be planted without a delay. The shortest delay concerns : """, x.edibleCrops)
+
 
 
 #================================================================================================================
@@ -489,16 +492,15 @@ def ASSESS_OptimalWaterResources(PRA, x):
 	x.TOLERdrought = 0
 	x.TOLERflood = 0
 	x.edibleCropsWR = {}
-	month		=	int(x.RotatMonth)
-
-
+	x.WRmargin_moy = {}
 
 	#=============================================================================================================
 	# loop for the Tmin(crop) Assessement (deletes all crops for which the PRA's Temperature is too cold for at least one month in GS_min :
 	for crop in x.edibleCrops:
 
+		month = int(x.GSstart[crop])
 		CORR_TOLERdf(crop, x)  # cf 'Functions_step1.py' --> converting the TOLERdrought(crop)/flood into percentages of ETc
-		last_month_of_the_shortest_growing_season = x.GSstart + GSmin(crop)
+		last_month_of_the_shortest_growing_season = x.GSstart[crop] + GSmin(crop)
 
 		while month <= last_month_of_the_shortest_growing_season: # while the month of rotation is in the potential GS of the current crop
 
@@ -506,24 +508,21 @@ def ASSESS_OptimalWaterResources(PRA, x):
 				x.edibleCrops =  [x for x in x.edibleCrops if x != crop]
 			month += 1
 
+	print("The PRA's Tmin matches the crop's one for following crops : ", x.edibleCrops)
+
 	# =============================================================================================================
 	# loop for the Water Requirement Assessement :
 	for crop in x.edibleCrops:
-		month = int(x.RotatMonth)
-		last_month_of_the_shortest_growing_season = x.GSstart + GSmin(crop)
+		month = int(x.GSstart[crop])
+		last_month_of_the_shortest_growing_season = x.GSstart[crop] + GSmin(crop)
 		x.edibleCropsWR[crop] = 0
 
 		while month <= last_month_of_the_shortest_growing_season:  # while the month of rotation is in the potential GS of the current crop
 
 			ETc_shortest_GS = ETc_GSmin(crop, month, x, PRA)
 			drought_tolerance_threshold = ETc_shortest_GS * x.TOLERdrought
-			# flood_tolerance_threshold = ETc_shortest_GS * x.TOLERflood
 			water_resources = WaterResources(month, PRA, crop, x)
 			margin_between_actual_and_ideal_water_resources = WRmargin_GSmin(crop, month, x, PRA)
-
-			# Setting up the Water Resource quality :
-			# WaterResources_acceptable = (drought_tolerance_threshold < water_resources < flood_tolerance_threshold)
-			# WaterResources_ideal = (ETc_shortest_GS <= water_resources < flood_tolerance_threshold)
 
 			WaterResources_acceptable = (drought_tolerance_threshold < water_resources)
 			WaterResources_ideal = (ETc_shortest_GS <= water_resources)
@@ -548,36 +547,56 @@ def ASSESS_OptimalWaterResources(PRA, x):
 
 			month += 1
 
+	print("Water Resources verified. Following crops remain : ", x.edibleCrops)
+
+	if x.edibleCropsWR.keys() == []:
+		# resetting the x.edibleCrops list and looking for later crops:
+		x.edibleCrops = list(x.edibleCropsID)
+		if 10 <= x.EndPreviousCrop_later <= 12:
+			later_crops = [(seed_from(crop) + 12) - x.EndPreviousCrop_later for crop in x.edibleCrops]
+		else:
+			later_crops = [seed_from(crop) - x.EndPreviousCrop_later for crop in x.edibleCrops if (seed_from(crop) - x.EndPreviousCrop_later) >= 0]
+		x.EndPreviousCrop_earlier = min(later_crops)
+		x.EndPreviousCrop_earlier = (x.EndPreviousCrop_earlier + x.EndPreviousCrop_later) % 12 # nearest date from the previous 'x.EndPreviousCrop_later'
+		x.EndPreviousCrop_later = int( x.EndPreviousCrop_earlier + 2)
+		# there is a hole in the rotation:
+		x.rotat[PRA].append( (None, x.EndPreviousCrop_earlier) )
+
+	else:
+		# calculating x.WRmargin_moy:
+		for crop in sorted( x.edibleCropsWR.keys() ):
+
+			month = int(x.GSstart[crop])
+			last_month_of_the_shortest_growing_season = x.GSstart[crop] + GSmin(crop)
+			x.WRmargin_moy[crop] = [0, 0]
+
+			if month > last_month_of_the_shortest_growing_season :
+				month += 12
+
+			while month <= last_month_of_the_shortest_growing_season :
+				x.WRmargin_moy[crop][0] += round( WRmargin_GSmin(crop, month, x, PRA) , 3 ) # summing the margins
+				x.WRmargin_moy[crop][1] += 1 # counting the months ( normally GSmin(crop) )
+
+				month += 1
+
+			x.WRmargin_moy[crop] = round( (x.WRmargin_moy[crop][0] / x.WRmargin_moy[crop][1]) , 3)
+
+		# Standardization step 1: finding the highest WReval
+		WReval_max = []
+		for crop in x.edibleCropsWR:
+			WReval_max.append(x.edibleCropsWR[crop])
+		WReval_max = max(WReval_max)
+
+		# Standardization step 1: dividing all crop's values by this max to get an index between 0 and 1 with 1 = best conditions.
+		for crop in x.edibleCropsWR:
+			x.edibleCropsWR[crop] = x.edibleCropsWR[crop]/WReval_max
+
+		print("""Standardization of the Water Resources indices [OK]
+	x.edibleCropsWR = """, x.edibleCropsWR)
 
 
-	# calculating x.WRmargin_moy:
-	for crop in sorted( x.edibleCropsWR.keys() ):
-
-		month = int(x.RotatMonth)
-		last_month_of_the_shortest_growing_season = x.GSstart + GSmin(crop)
-		x.WRmargin_moy[crop] = [0, 0]
-
-		while month <= last_month_of_the_shortest_growing_season :
-			x.WRmargin_moy[crop][0] += WRmargin_GSmin(crop, month, x, PRA) # summing the margins
-			x.WRmargin_moy[crop][1] += 1 # counting the months ( normally GSmin(crop) )
-
-			month += 1
-
-		x.WRmargin_moy[crop] = x.WRmargin_moy[crop][0] / x.WRmargin_moy[crop][1]
-
-	# Standardization step 1: finding the highest WReval
-	WReval_max = []
-	for crop in x.edibleCropsWR:
-		WReval_max.append(x.edibleCropsWR[crop])
-	WReval_max = max(WReval_max)
-
-	# Standardization step 1: dividing all crop's values by this max to get an index between 0 and 1 with 1 = best conditions.
-	for crop in x.edibleCropsWR:
-		x.edibleCropsWR[crop] = x.edibleCropsWR[crop]/WReval_max
-
-
-	# at the end of these both loops, we get an 'edibleCropsWR' dictionary with a "WaterResources evaluation" (WReval)
-	# for each x.edible crop. -> helps to compare, at the end, with the remaining crops.
+		# at the end of these both loops, we get an 'edibleCropsWR' dictionary with a "WaterResources evaluation" (WReval)
+		# for each x.edible crop. -> helps to compare, at the end, with the remaining crops.
 
 
 
@@ -618,10 +637,11 @@ def ASSESS_NutrientsMargin(PRA, x):
 		removed = {"N": removedN(crop), "P": removedP(crop), "K": removedK(crop), "Na": removedNa(crop),
 				   "Mg": removedMg(crop), "Ca": removedCa(crop), "Mn": removedMn(crop), "Fe": removedFe(crop),
 				   "Cu": removedCu(crop)}
+		nutrients = [x for x in sorted( list( x.ActualStand[PRA].keys() ))  if x != 'OM'] # Organic Matter ('OM' cannot be removed !)
 
 		#---------------------------------------------------
 
-		for nutrient in sorted( x.ActualStand[PRA].keys() ):
+		for nutrient in nutrients:
 			x.NutrientsMargin[crop][nutrient]=[]
 			monthInGS = 1
 
@@ -636,7 +656,7 @@ def ASSESS_NutrientsMargin(PRA, x):
 
 				if nutrient == 'N' :
 					margin_is_negative = ( x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - ((removed[nutrient] - fixedN(crop)) /GSmin(crop) ) ) < 0
-				else:
+				else :
 					margin_is_negative = ( x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - (removed[nutrient]/GSmin(crop) ) ) < 0
 
 
@@ -647,7 +667,8 @@ def ASSESS_NutrientsMargin(PRA, x):
 					# average removed and fixed nutrient for one month of GSmin(crop):
 					if nutrient == 'N' :
 						x.NutrientsMargin[crop][nutrient].append(
-						x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - ((removed[nutrient] - fixedN(x.SelectedCC)) /GSmin(x.SelectedCC) )
+						x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] -
+						((removed[nutrient] - fixedN(crop)) /GSmin(crop) )
 						)
 
 					x.NutrientsMargin[crop][nutrient].append(
@@ -665,10 +686,12 @@ def ASSESS_NutrientsMargin(PRA, x):
 			#END for (nutrient in x.NutrientsMargin[crop].keys())-------------------------------------------------------------
 
 		#END for (crop in x.edibleCrops)--------------------------------------------------------------------------------------
-
+	print("""Nutrient Margin Assessment [OK]""")
 
 	if x.edibleCrops == []:
 		NutrientsSufficient = False
+		print("""There is not enough nutrients anymore to feed the crop without external fertilizers.
+	END OF THE ROTATION""")
 
 
 #================================================================================================================
@@ -708,13 +731,13 @@ def ASSESS_Nutrients(x, PRA):
 		#END for --------------------------------------------------------------------------------------
 
 	for nutrient in MAXvalue.keys():
-		MAXvalue[nutrient] = [max(nutrient_amount) for nutrient_amount in MAXvalue[nutrient]]
+		MAXvalue[nutrient] = max(MAXvalue[nutrient])
 
 
 	# Margin standardization, second step (dividing by the MAXvalue to get a percentage):
 	for crop in x.NutrientsMargin:
 		#----------------------------------------------------------------------------------------------
-		for nutrient in MAXvalue[crop].keys():
+		for nutrient in MAXvalue.keys():
 			x.NutrientsMargin[crop][nutrient]	=	x.NutrientsMargin[crop][nutrient]	/	MAXvalue[nutrient]
 			#END for ----------------------------------------------------------------------------------
 
@@ -723,15 +746,13 @@ def ASSESS_Nutrients(x, PRA):
 
 		#END for --------------------------------------------------------------------------------------
 
-	edibleCropsSN = dict(x.NutrientsMargin)
-
 
 #================================================================================================================
 #================================================================================================================
 
 
 
-def SelectCrop(x):
+def SelectCrop(x, PRA):
 	"""INPUT:
  	*	x	is the class that contains all self variables used in all VegAu's functions
 
@@ -745,16 +766,21 @@ def SelectCrop(x):
 	"""
 
 	Final_Edibility_Index	= {}
-	edibleCoverCrops[crop]	= []
+	edibleCoverCrops		= {}
 
 
 	# Crossing the Water Requirement, Soil Nutrients and Pest&Diseases indexes (between 0 and 1 with 1 corresponding to the best conditions)
 	# Because de Pest&Diseases assessment did not suppress any crop of the list but because it has a critical biological importance,
 	# this index is ponderated by 2 against 1 for the others.
+
 	for crop in x.edibleCrops:
-		Final_Edibility_Index[crop] = (x.edibleCropsWR[crop] + edibleCropsSN[crop] + 2*x.edibleCropsPnD[crop]) / 2
+		#---------------------------------------------------------------------------------------------------------------
+		edibleCoverCrops[crop] = []
+		Final_Edibility_Index[crop] = round( ((x.edibleCropsWR[crop] + x.NutrientsMargin[crop] + 2*x.edibleCropsPnD[crop]) / 2), 3)
+		# --------------------------------------------------------------------------------------------------------------
+
 		if prodTYP(crop)=='Companion crop' or prodTYP(crop)=='Cover crop':
-			edibleCoverCrops.append(crop)
+			edibleCoverCrops[crop].append(crop)
 		if prodTYP(crop)=='Companion crop':
 			x.edibleCompanionCrops.append(crop)
 
@@ -763,82 +789,47 @@ def SelectCrop(x):
 			x.edibleCrops = x.edibleCompanionCrops # ATTENTION, VÉRIFIER QUE ÇA N'AFFECTE PAS LE RESTE DE VEGAU !!
 
 	# Selecting the best(s) crop for following the preceding one:
-	FinalSelection1 = []
-	FinalSelection2 = []
-	FinalSelection3 = []
+	FinalSelection = []
 	ratioADAPT_list = []
 	ratioADAPT_dict = {}
+
 	for crop in x.edibleCrops:
-		if Final_Edibility_Index[crop] == 1:
-			FinalSelection1.append(crop)
-		elif Final_Edibility_Index[crop] >= 0.9:
-			FinalSelection1.append(crop)
-		elif Final_Edibility_Index[crop] >= 0.8:
-			FinalSelection1.append(crop)
-		elif Final_Edibility_Index[crop] >= 0.7:
-			FinalSelection1.append(crop)
-		elif Final_Edibility_Index[crop] >= 0.6:
-			FinalSelection1.append(crop)
-		elif Final_Edibility_Index[crop] >= 0.5:
-			FinalSelection1.append(crop)
-		elif Final_Edibility_Index[crop] >= 0.4:
-			FinalSelection1.append(crop)
-		elif Final_Edibility_Index[crop] >= 0.3:
-			FinalSelection1.append(crop)
-		elif Final_Edibility_Index[crop] >= 0.2:
-			FinalSelection1.append(crop)
-		elif Final_Edibility_Index[crop] >= 0.1:
-			FinalSelection1.append(crop)
-		else:
-			FinalSelection1.append(crop)
+		if Final_Edibility_Index[crop] == max( Final_Edibility_Index.values() ):
+			FinalSelection.append(crop)
 
-	if len(FinalSelection1) == 1:
-		return FinalSelection1[0]
-	else:
-		for crop in FinalSelection1:
-			if PRIORITYgeneral(crop) == 1:
-				FinalSelection2.append(crop)
-			elif PRIORITYgeneral(crop) == 2:
-				FinalSelection2.append(crop)
-			elif PRIORITYgeneral(crop) == 3:
-				FinalSelection2.append(crop)
-	if len(FinalSelection2) == 1:
-		return FinalSelection2[0]
-	else:
-		for crop in FinalSelection2:
-			# if the selected crops are fruit trees, we chose the ones which have the highest Priority
-			if PRIORITYfruits(crop) == 1:
-				FinalSelection3.append(crop)
-			elif PRIORITYfruits(crop) == 2:
-				FinalSelection3.append(crop)
-			elif PRIORITYfruits(crop) == 3:
-				FinalSelection3.append(crop)
-			elif PRIORITYfruits(crop) == 4:
-				FinalSelection3.append(crop)
-			elif PRIORITYfruits(crop) == 5:
-				FinalSelection3.append(crop)
-			# if the selected crops are textiles, we chose the ones which have the highest Priority
-			if PRIORITYtextile(crop) == 1:
-				FinalSelection3.append(crop)
-			elif PRIORITYtextile(crop) == 2:
-				FinalSelection3.append(crop)
-			elif PRIORITYtextile(crop) == 3:
-				FinalSelection3.append(crop)
-			# if the selected crops are general cultures, we keep them all and compare the ADAPTratio of all remaining crops:
-			if PRIORITYtextile(crop) == 0 and PRIORITYfruits(crop) == 0:
-				FinalSelection3.append(crop)
-	if len(FinalSelection3) == 1:
-		return FinalSelection3[0]
-	else:
-		for crop in FinalSelection3:
-			ratioADAPT_dict[ratioADAPT(crop)] = crop
-			ratioADAPT_list.append(ratioADAPT(crop))
+	if len(FinalSelection) == 1:
+		return FinalSelection[0]
+	#-----------------------------------------------
+	else: # considering the general priority index :
+		priority = [PRIORITYgeneral(crop) for crop in FinalSelection]
+		FinalSelection = [x for x in FinalSelection if x == max(priority)]
 
+	if len(FinalSelection) == 1:
+		return FinalSelection[0]
+	# -----------------------------------------------
+	else: # considering the priority index for fruits :
+		priority = [PRIORITYfruits(crop) for crop in FinalSelection]
+		FinalSelection = [x for x in FinalSelection if x == max(priority)]
+
+	if len(FinalSelection) == 1:
+		return FinalSelection[0]
+	# -----------------------------------------------
+	else: # considering the priority index for textiles :
+		priority = [PRIORITYtextile(crop) for crop in FinalSelection]
+		FinalSelection = [x for x in FinalSelection if x == max(priority)]
+
+	if len(FinalSelection) == 1:
+		return FinalSelection[0]
+	# -----------------------------------------------
+	else:
 		# At least, chosing the crop with the lowest ratioADAPT (crop which have the lesser geographic adaptability in the study area, here France)
-		return ratioADAPT_dict[min(ratioADAPT_list)]
+		priority = [ratioADAPT(crop) for crop in FinalSelection]
+		FinalSelection = [x for x in FinalSelection if x == min(priority)]
+		return min(FinalSelection)
 
 
-def ASSESS_Water_CompanionCrop_for_SelectedCrop(x, CurrentMonth):
+
+def ASSESS_Water_CompanionCrop_for_SelectedCrop(x, PRA):
 	"""INPUT :
 	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
 	*	x		is the class that contains all self variables used in all VegAu's functions
@@ -850,12 +841,9 @@ def ASSESS_Water_CompanionCrop_for_SelectedCrop(x, CurrentMonth):
 
 	print("Looking for an eventual Companion Crop...")
 	WaterResources_are_Sufficient = True
+	CurrentMonth = x.RotatMonth % 12
 
-	x.TOLERdrought = 0
-	x.TOLFERflood  = 0
-
-	CORR_TOLERdf(crop, x) # these function updates x.TOLERflood and x.TOLERdrought --> calculates % from the indices TOLERflood(crop) and TOLERdrought(crop)
-	maximum_growing_season_duration = GSmax(crop)
+	maximum_growing_season_duration = GSmax(x.SelectedCrop)
 	GS1_4	= round(maximum_growing_season_duration * 0.25 )
 	GS2_4	= round(maximum_growing_season_duration * 0.50 )
 	GS3_4	= round(maximum_growing_season_duration * 0.75 )
@@ -866,33 +854,36 @@ def ASSESS_Water_CompanionCrop_for_SelectedCrop(x, CurrentMonth):
 			if x.edibleCompanionCrops == []:
 				WaterResources_are_Sufficient = False
 			else:
+				i = 1
 				for crop in x.edibleCompanionCrops:
 
 					while i <= GSmax(crop):
 
 						#= Determining the current stage of the GS =============================================
 						if i	<= GS1_4 :
-							print("Assessing the Water Resources for the 1st quarter of the growing season...")
-							ETc		= Kc1_4(crop) * ETPmoy(CurrentMonth, PRA)
+							# print("Assessing the Water Resources for the 1st quarter of the growing season...")
+							ETc					= Kc1_4(crop) * ETPmoy(CurrentMonth, PRA) # ETc = Kc (index) ETPmoy (in mm)
+							ETc_SelectedCrop	= Kc1_4(x.SelectedCrop) * ETPmoy(CurrentMonth, PRA)
 
 						elif i	<= GS2_4 :
-							ETc		= Kc2_4(crop) * ETPmoy(CurrentMonth, PRA)
-							print("Assessing the Water Resources for the 2nd quarter of the growing season...")
+							ETc					= Kc2_4(crop) * ETPmoy(CurrentMonth, PRA)
+							ETc_SelectedCrop	= Kc2_4(x.SelectedCrop) * ETPmoy(CurrentMonth, PRA)
+							# print("Assessing the Water Resources for the 2nd quarter of the growing season...")
 
 						elif i	<= GS3_4 :
-							ETc		= Kc3_4(crop)*ETPmoy(CurrentMonth, PRA)
-							print("Assessing the Water Resources for the 3rd quarter of the growing season...")
+							ETc					= Kc3_4(crop)*ETPmoy(CurrentMonth, PRA)
+							ETc_SelectedCrop	= Kc3_4(x.SelectedCrop) * ETPmoy(CurrentMonth, PRA)
+							# print("Assessing the Water Resources for the 3rd quarter of the growing season...")
 
 						else:
-							ETc		= Kc4_4(crop)*ETPmoy(CurrentMonth, PRA)
-							print("Assessing the Water Resources for the 4th quarter of the growing season...")
+							ETc					= Kc4_4(crop)*ETPmoy(CurrentMonth, PRA)
+							ETc_SelectedCrop	= Kc4_4(x.SelectedCrop) * ETPmoy(CurrentMonth, PRA)
+							# print("Assessing the Water Resources for the 4th quarter of the growing season...")
 						#========================================================================================
 
 						# ATTENTION: CompanionCrops with a Cash Crop do not have the same density as if they were alone: 50% * ETc
 
-						CurrentMonth = x.GSstart(x.SelectedCrop)
-						ETc					= Kc1_4(crop) * ETPmoy(CurrentMonth, PRA)			# ETc = Kc (index) ETPmoy (in mm)
-						ETc_SelectedCrop	= Kc1_4(x.SelectedCrop) * ETPmoy(CurrentMonth, PRA)
+						CurrentMonth = x.GSstart
 
 						if CurrentMonth % 12 == 0:
 
@@ -913,6 +904,7 @@ def ASSESS_Water_CompanionCrop_for_SelectedCrop(x, CurrentMonth):
 									WaterResources_are_Sufficient = False
 
 						CurrentMonth += 1
+						i += 1
 
 					#END while (i <= GSmax)
 
@@ -927,19 +919,19 @@ def ASSESS_Water_CompanionCrop_for_SelectedCrop(x, CurrentMonth):
 	###############################
 
 	month = 0
-	crop = 0
 
 	x.RotatMonth = int(x.RotatMonth)
 	x.edibleCropsWR = {}
-	WaterResources_acceptable	=	( (ETc_GSmin(crop, month, x, PRA) * TOLERdrought(crop)) < WaterResources(month, PRA, crop, x) < (ETc_GSmin(crop, month, x, PRA) * TOLERflood(crop)) )
-	WaterResources_ideal		=	( ETc_GSmin(crop, month, x, PRA) < WaterResources(month, PRA, crop, x) < (ETc_GSmin(crop, month, x, PRA) * TOLERflood(crop)) )
-	month_in_GS = ( month <= (x.GSstart + GSmin(crop)) )
+	WaterResources_acceptable	=	( (ETc_GSmin(x.SelectedCrop, month, x, PRA) * TOLERdrought(x.SelectedCrop)) < WaterResources(month, PRA, x.SelectedCrop, x) < (ETc_GSmin(x.SelectedCrop, month, x, PRA) * TOLERflood(x.SelectedCrop)) )
+	WaterResources_ideal		=	( ETc_GSmin(x.SelectedCrop, month, x, PRA) < WaterResources(month, PRA, x.SelectedCrop, x) < (ETc_GSmin(x.SelectedCrop, month, x, PRA) * TOLERflood(x.SelectedCrop)) )
+	month_in_GS = ( month <= (x.GSstart + GSmin(x.SelectedCrop)) )
 	x.CCedibility = {}
 	EdibilityIndexes = []
 
 	if len(x.edibleCompanionCrops) == 1:
 		x.SelectedCC = x.edibleCompanionCrops[0]
-	else: #  len(x.edibleCompanionCrops) >= 1 : each "non x.edible" crop has been deleted while the last loop
+
+	else: #  len(x.edibleCompanionCrops) >= 1 : each "non edible" crop has been deleted while the last loop
 		for crop in x.edibleCompanionCrops:
 			#~ CROProw = crop
 			month = int(x.RotatMonth)
@@ -995,99 +987,102 @@ def ASSESS_Nutrients_CompanionCrop_for_SelectedCrop(x):
 	"""
 
 
-	print("Calculatin nutrient margins for x.edible Companion Crops...")
+	if x.edibleCompanionCrops == []:
+		pass
+
+	else :
+		print("Calculatin nutrient margins for edible Companion Crops...")
+		InitialySelectedCC = str(x.SelectedCC)
+
+		x.NutrientsMargin[crop] = {'N': [], 'P': [], 'K': [], 'Na': [],'Mg': [], 'Ca': [], 'Mn': [], 'Fe': [], 'Cu': []}
 
 
+		x.SelectedCC_stays_the_same	= InitialySelectedCC == x.SelectedCC
+		there_is_a_CC_to_assess		= x.SelectedCC != None
+		tests_are_not_finished				= True
 
-	InitialySelectedCC = int(x.SelectedCC)
+		while there_is_a_CC_to_assess and tests_are_not_finished:
+			while x.SelectedCC_stays_the_same and tests_are_not_finished:
 
-	x.NutrientsMargin[crop] = {'N': [], 'P': [], 'K': [], 'Na': [],'Mg': [], 'Ca': [], 'Mn': [], 'Fe': [], 'Cu': []}
-
-
-	x.SelectedCC_stays_the_same	= InitialySelectedCC == x.SelectedCC
-	there_is_a_CC_to_assess		= x.SelectedCC != None
-	tests_are_not_finished				= True
-
-	while there_is_a_CC_to_assess and tests_are_not_finished:
-		while x.SelectedCC_stays_the_same and tests_are_not_finished:
-
-			#--------------------------------------
-			print("Testing the x.SelectedCC ({})...".format( prod_EN(x.SelectedCC) ))
+				#--------------------------------------
+				print("Testing the x.SelectedCC ({})...".format( prod_EN(x.SelectedCC) ))
 
 
-			def CC_potential_margin(x):
-				"""INPUT :
-				*	x	is the class that contains all self variables used in all VegAu's functions
+				def CC_potential_margin(x):
+					"""INPUT :
+					*	x	is the class that contains all self variables used in all VegAu's functions
 
-				FUNCTION:
-				Calculates the average N-margin for each 'edibleCrops' and add this value in x.NutrientsMargin[crop]['N'].
-				If a crop's N-margin in negative while GSmin(crop), this crop is deleted from the dict 'NutrientsMargin' and 'edibleCrops'.
-				Takes the decomposition of previous crops into account."""
+					FUNCTION:
+					Calculates the average N-margin for each 'edibleCrops' and add this value in x.NutrientsMargin[crop]['N'].
+					If a crop's N-margin in negative while GSmin(crop), this crop is deleted from the dict 'NutrientsMargin' and 'edibleCrops'.
+					Takes the decomposition of previous crops into account."""
 
-				SelectedCC = str(x.SelectedCC)
+					SelectedCC = str(x.SelectedCC)
 
-				for nutrient in x.NutrientsMargin[SelectedCC].keys():
-					x.NutrientsMargin[SelectedCC][nutrient]=[]
-					monthInGS = 1
+					for nutrient in x.NutrientsMargin[SelectedCC].keys():
+						x.NutrientsMargin[SelectedCC][nutrient]=[]
+						monthInGS = 1
 
-					#-------------------------------------------------------------------------------------------------------------
+						#-------------------------------------------------------------------------------------------------------------
 
-					while monthInGS <= GSmin(x.SelectedCC):
+						while monthInGS <= GSmin(x.SelectedCC):
 
-						#---------------------------------------------------------------------------------------------------------
-						# if the nutrient amount in the PRA's soil is not sufficient while GSmin(x.SelectedCC),
-						# the Selected Companion Crop is not considered as x.edible anymore:
-						removed = {"N": removedN(x.SelectedCC), "P": removedP(x.SelectedCC), "K": removedK(x.SelectedCC), "Na": removedNa(x.SelectedCC), "Mg": removedMg(x.SelectedCC), "Ca": removedCa(x.SelectedCC), "Mn": removedMn(x.SelectedCC), "Fe": removedFe(x.SelectedCC), "Cu": removedCu(x.SelectedCC)}
+							#---------------------------------------------------------------------------------------------------------
+							# if the nutrient amount in the PRA's soil is not sufficient while GSmin(x.SelectedCC),
+							# the Selected Companion Crop is not considered as x.edible anymore:
+							removed = {"N": removedN(x.SelectedCC), "P": removedP(x.SelectedCC), "K": removedK(x.SelectedCC), "Na": removedNa(x.SelectedCC), "Mg": removedMg(x.SelectedCC), "Ca": removedCa(x.SelectedCC), "Mn": removedMn(x.SelectedCC), "Fe": removedFe(x.SelectedCC), "Cu": removedCu(x.SelectedCC)}
 
-						if nutrient == 'N' :
-							margin_is_negative = ( x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - ((removed[nutrient] - fixedN(x.SelectedCC)) /GSmin(x.SelectedCC) ) ) < 0
-						else:
-							margin_is_negative = ( x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - (removed[nutrient]/GSmin(x.SelectedCC) )) < 0
+							if nutrient == 'N' :
+								margin_is_negative = ( x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - ((removed[nutrient] - fixedN(x.SelectedCC)) /GSmin(x.SelectedCC) ) ) < 0
+							else:
+								margin_is_negative = ( x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - (removed[nutrient]/GSmin(x.SelectedCC) )) < 0
 
 
-						if margin_is_negative :
-							del x.CCedibility[SelectedCC]
+							if margin_is_negative :
+								del x.CCedibility[SelectedCC]
 
-							# If there are still x.edible Companion Crops, another one is chosen according to its Water Requirements:
-							if x.CCedibility == {}:
-										print("There are no x.edible Companion Crop for the currently Selected Crop.")
-										x.SelectedCC = None
+								# If there are still x.edible Companion Crops, another one is chosen according to its Water Requirements:
+								if x.CCedibility == {}:
+											print("There are no x.edible Companion Crop for the currently Selected Crop.")
+											x.SelectedCC = None
+
+								else:
+									for crop in x.edibleCompanionCrops:
+										if x.CCedibility[crop] == max(EdibilityIndexes):
+											SelectedCC = int(crop)
+											print("Other Companion Crop selected: {}".format(prod_EN(SelectedCC)))
 
 							else:
-								for crop in x.edibleCompanionCrops:
-									if x.CCedibility[crop] == max(EdibilityIndexes):
-										SelectedCC = int(crop)
-										print("Other Companion Crop selected: {}".format(prod_EN(SelectedCC)))
+								# average removed and fixed nutrient for one month of GSmin(x.SelectedCC):
+								if nutrient == 'N' :
+									x.NutrientsMargin[SelectedCC][nutrient].append( x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - ((removed[nutrient] - fixedN(x.SelectedCC)) /GSmin(x.SelectedCC) ) )
 
-						else:
-							# average removed and fixed nutrient for one month of GSmin(x.SelectedCC):
-							if nutrient == 'N' :
-								x.NutrientsMargin[SelectedCC][nutrient].append( x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - ((removed[nutrient] - fixedN(x.SelectedCC)) /GSmin(x.SelectedCC) ) )
+								x.NutrientsMargin[SelectedCC][nutrient].append( x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - (removed[nutrient]/GSmin(x.SelectedCC)) )
 
-							x.NutrientsMargin[SelectedCC][nutrient].append( x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - (removed[nutrient]/GSmin(x.SelectedCC)) )
+								#END if (margin not negative) -------------------------------------------------------------------------
 
-							#END if (margin not negative) -------------------------------------------------------------------------
+							monthInGS += 1
 
-						monthInGS += 1
+							#END while (end of GSmin) -------------------------------------------------------------------------------
 
-						#END while (end of GSmin) -------------------------------------------------------------------------------
+						x.NutrientsMargin[SelectedCC][nutrient] = sum(x.NutrientsMargin[SelectedCC][nutrient]) / len(x.NutrientsMargin[SelectedCC][nutrient])
 
-					x.NutrientsMargin[SelectedCC][nutrient] = sum(x.NutrientsMargin[SelectedCC][nutrient]) / len(x.NutrientsMargin[SelectedCC][nutrient])
+						print("Companion Crop: {} margin		[OK]".format(nutrient))
 
-					print("Companion Crop: {} margin		[OK]".format(nutrient))
-
-					#END for -------------------------------------------------------------------------------------------------------
+						#END for -------------------------------------------------------------------------------------------------------
 
 
-			tests_are_not_finished = False
-			#END while-----------------------------
+				CC_potential_margin(x)
 
-		if InitialySelectedCC != x.SelectedCC:	# if Selected Crop changes, the change is taken into account and the loop continues.
-			InitialySelectedCC = str(x.SelectedCC)
-		#END while --------------------------------
+				tests_are_not_finished = False
+				#END while-----------------------------
 
-	if x.SelectedCC != None:
-		print("Companion crop selected: {}".format(prod_EN(x.SelectedCC)))
+			if InitialySelectedCC != x.SelectedCC:	# if Selected Crop changes, the change is taken into account and the loop continues.
+				InitialySelectedCC = str(x.SelectedCC)
+			#END while --------------------------------
+
+		if x.SelectedCC != None:
+			print("Companion crop selected: {}".format(prod_EN(x.SelectedCC)))
 
 
 
@@ -1144,7 +1139,6 @@ def SelectedCC_Kill(PRA, x):
 		monthInGS = 1
 		# Calculated the nutrients that are returned by the previous crop by the GS of the newly x.SelectedCC:
 		while monthInGS <= GSmin(x.SelectedCC):
-			PRArotat[PRA,x.RotatMonth+monthInGS].value = prodID(crop)
 			x.ActualStand[PRA]['N'] - removedN(x.SelectedCC)
 			x.ActualStand[PRA]['P'] - removedP(x.SelectedCC)
 			x.ActualStand[PRA]['K'] -= removedK(x.SelectedCC)
@@ -1164,48 +1158,12 @@ def SelectedCC_Kill(PRA, x):
 
 
 
-def update_RotatMonth_and_VERIFprodBOT(x):
-	"""INPUT :
-	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
-	*	x		is the class that contains all self variables used in all VegAu's functions
-
-	OUTPUT:
-	*	Updated dictionary 'VERIFprodBOT'
-	*	Updated variable 'RotatMonth'
-
-	NOTICE:
-	This functions comes AFTER the SelectCrop(x) !
-	"""
-
-	SelectedCrop_GS = 0
-
-	if x.RotatMonth %12 > x.GSstart[x.SelectedCrop]:
-		seeding_SelectedCrop = x.GSstart[x.SelectedCrop] + 12
-	else:
-		seeding_SelectedCrop = x.GSstart[x.SelectedCrop]
-
-
-	while SelectedCrop_GS < x.RotatMonth + (x.GSstart[x.SelectedCrop] - x.RotatMonth % 12):	# x.RotatMonth + Duration from the seeding of the last crop to
-																								# the seeding of the newly selected crop
-		x.RotatMonth += SelectedCrop_GS
-		#updating the duration (in month) since the seeding of the CUrrently selected crop for the next ones:
-		for BotanicFamily in x.VERIFprodBOT.keys():
-			x.VERIFprodBOT[BotanicFamily]['Duration since previous crop'] += 1
-
-		x.RotatMonth +=1
-		# now, x.RotatMonth corresponds to the duration from the begining
-		# of the rotation up to x.GSstart[x.SelectedCrop]
-
-	x.rotat[PRA].append(SelectedCrop, SelectedCrop_GS)
-
 
 def update_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x):
 	"""INPUT :
 	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
 	*	x		is the class that contains all self variables used in all VegAu's functions
 
-	NOTICE :
-	This function comes AFTER update_RotatMonth_and_VERIFprodBOT(x) : it creates an entry in x.VERIFprodBOT for the newly selected crop
 
 	FUNCTION:
 	If there is no one in the dictionary and verifies if the minimum return period is respected.
@@ -1222,18 +1180,9 @@ def update_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x):
 
 	# x.SelectedCrop is added to the list of the crops added to the rotation :
 
-	if prodBOT(x.SelectedCrop) not in x.VERIFprodBOT.keys():
-	# if the x.SelectedCrop's prodBOT is not already in the dict, it is added:
-		print("	There is no crop from the same botanic family of the x.SelectedCrop in the rotation.")
-		x.VERIFprodBOT[prodBOT(x.SelectedCrop)] = {}
-		x.VERIFprodBOT[prodBOT(x.SelectedCrop)]['Duration since previous crop'] = 0
-		x.VERIFprodBOT[prodBOT(x.SelectedCrop)]['Crops in Rotation'] = 1
-
-
-	else:
-	# If the x.SelectedCrop's prodBOT is already in the dict, it is one crop more of this prodBOT in the rotation:
+	if prodBOT(x.SelectedCrop) in x.VERIFprodBOT.keys():
 		print("""	There is already a crop from the same botanic family of the x.SelectedCrop in the rotation...
-				Incrementing the 'PestsDiseases_in_rotation' index for the botanic family of this crop """)
+	Incrementing the 'PestsDiseases_in_rotation' index for the botanic family of this crop """)
 		x.VERIFprodBOT[prodBOT(x.SelectedCrop)]['Crops in Rotation'] += 1
 
 		if x.VERIFprodBOT[prodBOT(x.SelectedCrop)]['Duration since previous crop']/12 < period(x.SelectedCrop):
@@ -1261,18 +1210,30 @@ def ASSESS_PestDiseases(x):
 	of a same botanic family.
 	"""
 
+	x.edibleCropsPnD = {} # cleaning up the dict from previous calculations
+
 	for crop in x.edibleCrops:
-		duration_since_previous_crop		=	x.VERIFprodBOT[prodBOT(crop)]['Duration since previous crop']
-		
-		x.edibleCropsPnD[crop] = (duration_since_previous_crop / 12) / period(crop)
-		# theoritically, if x.edibleCropsPnD[prodBOT(crop)] >= 1, no risk -> the highest the ratio, the better the conditions (like the other indexes, important)
+
+		if prodBOT(crop) not in x.VERIFprodBOT.keys():
+			x.VERIFprodBOT[prodBOT(crop)] = {'Duration since previous crop' : 0, 'Crops in Rotation' : 1}
+		if int(period(crop)) == 0:
+			x.edibleCropsPnD[crop] = 1
+
+		else: # if prodBOT == 0, ZeroDivisionError
+
+			duration_since_previous_crop		=	x.VERIFprodBOT[prodBOT(crop)]['Duration since previous crop']
+
+			x.edibleCropsPnD[crop] = (duration_since_previous_crop / 12) / period(crop)
+			# theoritically, if x.edibleCropsPnD[prodBOT(crop)] >= 1, no risk -> the highest the ratio, the better the conditions (like the other indexes, important)
 		
 	# Finding the highest index in x.edibleCropsPnD
 	indexMAX = max(x.edibleCropsPnD.values())
 	
 	for crop in x.edibleCropsPnD:
-		x.edibleCropsPnD[crop] = x.edibleCropsPnD / indexMAX
-		#the obtained values are yet all comprised between 1 and 0, with 1 the very best one.
+		if int(period(crop)) != 0: # x.edibleCropsPnD[crop] has already been set to 1 because there are no Pests and
+									# Diseases risks to rotation occurrence (trees and shrubs: no rotation !)
+			x.edibleCropsPnD[crop] = x.edibleCropsPnD[crop] / indexMAX
+			#the obtained values are yet all comprised between 1 and 0, with 1 the very best one.
 	
 
 
@@ -1288,26 +1249,26 @@ def ASSESS_ResiduesDecomposition_of_PreviousCrops(PRA, x):
 	"""
 	
 	
-	print("Calculates the nutrients that are returned by the previous crops...")
+	print("Calculating the nutrients that are returned by the previous crops...")
 	monthInGS = 1
 	
 	
 	# Calculated the nutrients that are returned by the previous crop by the GS of the newly x.SelectedCrop:
 	while monthInGS <= GSmin(x.SelectedCrop):
-		for nutrient in x.ActualStand.keys():
+		for nutrient in x.ActualStand[PRA].keys():
 			if monthInGS not in x.decomposition_month.keys():
 				x.decomposition_month[monthInGS] = {}
 				x.decomposition_month[monthInGS] = 0
 			if monthInGS == 1:								# minerals that still had 1 month delay before mineralization 
 				x.ActualStand[PRA][nutrient] += x.decomposition_month[1][nutrient]	# at x.GSstart-1 are yet available to x.SelectedCrop
-			if monthInGS >= 2:
-				for i in x.decomposition_month.keys():
-					if i not in x.decomposition_month.keys():
-						x.decomposition_month[i] = {}
-						x.decomposition_month[i-1] = x.decomposition_month[i]	# updating mineralization delay: mineralization delay reduces each month by 1 month (while GS)
 		monthInGS += 1
-	
-	print("	OK")
+
+	for i in sorted(x.decomposition_month.keys()) :
+		try:
+			x.decomposition_month[i] = x.decomposition_month[i+1]	# updating mineralization delay: mineralization delay reduces each month by 1 month (while GS)
+		except KeyError:
+			x.decomposition_month[i] = 0 # i+1 does not exist for the last value.
+
 
 
 
@@ -1332,9 +1293,9 @@ def ASSESS_ResiduesDecomposition_of_SelectedCrop(x):
 			mineralizedCPK_amount = mineralizedCPK(x.SelectedCrop, i) - mineralizedCPK(x.SelectedCrop, i - 1)
 			# the functions mineralizedCPK(crop, month) and mineralizedN(crop, month) give the mineralized stuff amount at month[i]
 			# to get the mineralized amount while x.decomposition_month[i] only --> x.decomposition_month[i] - x.decomposition_month [i-1]
-			while mineralizedN_amount > 0 or mineralizedCKN_amount > 0:
-				if i not in month.keys():
-					x.decomposition_month[i] = 0
+
+			if mineralizedN_amount > 0 or mineralizedCPK_amount > 0:
+
 				if nutrient == 'N':
 					x.decomposition_month[i][nutrient] += mineralizedN_amount
 				else:
@@ -1359,13 +1320,13 @@ def SelectedCrop_Harvest(PRA, x):
 	
 	
 	monthInGS = 1
+	end_of_the_shortest_GS = GSmin(x.SelectedCrop)
 	# Calculating the nutrients that are REMOVED while the GS of the newly x.SelectedCrop:
 	print("Simulating the nutrient uptakes by the Selected Crop...")
 	
-	while monthInGS <= GSmin(crop):
-		PRArotat[PRA,x.RotatMonth+monthInGS].value = prodID(crop)
-		x.ActualStand[PRA]['N'] - removedN(x.SelectedCrop)
-		x.ActualStand[PRA]['P'] - removedP(x.SelectedCrop)
+	while monthInGS <= end_of_the_shortest_GS:
+		x.ActualStand[PRA]['N'] -= removedN(x.SelectedCrop)
+		x.ActualStand[PRA]['P'] -= removedP(x.SelectedCrop)
 		x.ActualStand[PRA]['K'] -= removedK(x.SelectedCrop)
 		x.ActualStand[PRA]['Na'] -= removedNa(x.SelectedCrop)
 		x.ActualStand[PRA]['Mg'] -= removedMg(x.SelectedCrop)
@@ -1373,8 +1334,7 @@ def SelectedCrop_Harvest(PRA, x):
 		x.ActualStand[PRA]['Mn'] -= removedMn(x.SelectedCrop)
 		x.ActualStand[PRA]['Fe'] -= removedFe(x.SelectedCrop)
 		x.ActualStand[PRA]['Cu'] -= removedCu(x.SelectedCrop)
-	print("	OK")
-		
+		monthInGS += 1
 		
 	# The following function calculates the residues that remain after the x.SelectedCrop:
 	ASSESS_ResiduesDecomposition_of_SelectedCrop(x)

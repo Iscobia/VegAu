@@ -27,7 +27,11 @@ from importedVariables import *	# lambda functions to access easier to the data 
 def WaterResources(month, PRA, crop, x):
 	"""Returns the water resources for a PRA (input : PRA ID) while the given month (month number, from 1 to 12).
 	The water resources are assumed to be the amount of water from the rainfall if it does not exceed the field capacity.
-	If rainfall exceeds the field capacity, only the field capacity will be taken into account."""
+	If rainfall exceeds the field capacity, only the field capacity will be taken into account.
+
+	The field capacity depends on the rooting depth, the soil texture and the organic matter content.
+	The growth of the roots is taken into account (estimated as a percent of mature rooting depth acc. to the growing
+	stage."""
 
 
 	# Taking the Soil Type into account :
@@ -37,7 +41,28 @@ def WaterResources(month, PRA, crop, x):
 	AWC_OM			=	OM_retention_capacity(x, PRA) # unit : L/m²/10cm depth --> mm/10cm of rooting depth
 
 	# Calculating the total available water capacity including the rooting depth
-	maximum_available_water_capacity =	( AWC_SoilType + AWC_OM ) * ( rootDEPTH(crop)/10 )
+
+	try :
+		GrowingMonth = (month - x.GSstart[crop]) % 12 # month is assumed to be x.RotatMonth and x.GSstart the rotation day for the crop seeding
+	except : # a crop has been selected : x.GSstart is an integer
+		GrowingMonth = (month - x.GSstart) % 12
+
+	GSmid	= round(GSmax(crop) * 0.50 )
+
+	if GrowingMonth <= GSmid:
+		RootingDepth = rootDEPTH(crop) * GrowingMonth/GSmid # we assume that the rooting capacity is proportional to
+															# the duration from planting to the middle of the growing
+															# season. After the middle of the GS, roots are assumed to
+															# be mature.
+	else:
+		RootingDepth = rootDEPTH(crop)
+
+	#----------------------------------------------------
+	# Making sure that the rooting depth is deep enough to allow the calculation. (setting a minimum value)
+	if RootingDepth < 5:
+		RootingDepth = 5 # cm
+	# ----------------------------------------------------
+	maximum_available_water_capacity =	round( ( AWC_SoilType + AWC_OM ) * ( RootingDepth/10 ) )
 
 	rainfall = Ptot(month, PRA)
 
