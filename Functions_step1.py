@@ -24,8 +24,19 @@ from importedVariables import *	# lambda functions to access easier to the data 
 
 #================================================================================================================
 
-def WaterResources(month, PRA, crop, x):
-	"""Returns the water resources for a PRA (input : PRA ID) while the given month (month number, from 1 to 12).
+def WaterResources(month, GSstart, PRA, crop, x):
+	"""INPUT:
+	* month	:	month in the rotation. After the first year, it is greater than 12.
+	* GSstart :	seeding month for the crop. In the STEP1, GSstart = seed_from(crop).
+				In the STEP2 (rotation simulation), GSstart = x.GSstart[crop] before the
+				cash crop selection and GSstart = x.GSstart after the function SELECT_CashCrop(x, PRA).
+	* PRA		is the ID of the current PRA/study area
+	* crop		is the ID of the current crop
+	* x			is the class that contains all the variables which are used all along the model.
+	
+	
+	FUNCTION :
+	Returns the water resources for a PRA (input : PRA ID) while the given month (month number, from 1 to 12).
 	The water resources are assumed to be the amount of water from the rainfall if it does not exceed the field capacity.
 	If rainfall exceeds the field capacity, only the field capacity will be taken into account.
 
@@ -33,7 +44,7 @@ def WaterResources(month, PRA, crop, x):
 	The growth of the roots is taken into account (estimated as a percent of mature rooting depth acc. to the growing
 	stage."""
 
-
+	
 	# Taking the Soil Type into account :
 	AWC_SoilType	=	AWC_SoilOnly(PRA) # unit : L/m²/10cm depth --> mm/10cm of rooting depth
 
@@ -42,10 +53,13 @@ def WaterResources(month, PRA, crop, x):
 
 	# Calculating the total available water capacity including the rooting depth
 
-	try :
-		GrowingMonth = (month - x.GSstart[crop]) % 12 # month is assumed to be x.RotatMonth and x.GSstart the rotation day for the crop seeding
-	except : # a crop has been selected : x.GSstart is an integer
-		GrowingMonth = (month - x.GSstart) % 12
+	# What did I mean with that line ?... ↆ
+	GrowingMonth = month - GSstart
+	# GrowingMonth is the amount of month from the GSstart to the given month.
+	# It mentions our position in the growing season and allow to know if we are before or
+	# after the middle of the GS : after the middle of the GS, the rooting depth is
+	# assumed to stay the same.
+
 
 	GSmid	= round(GSmax(crop) * 0.50 )
 
@@ -73,6 +87,7 @@ def WaterResources(month, PRA, crop, x):
 	# as it is difficult to know exactly which amount of water could really be absorbed by the plant, we will assume that
 	# the half of the water is lost because of evaporation and
 
+#================================================================================================================
 
 def CORRseed_to(crop):
 	"""INPUT:
@@ -114,7 +129,7 @@ def GSmax_for_CurrentCrop(crop):
 	GSmax_crop = seedingTime+GSmax(crop)
 	return int(GSmax_crop)
 
-
+#================================================================================================================
 
 def CORR_TOLERdf(crop, x):
 	"""INPUT:
@@ -200,6 +215,9 @@ def ASSESS_Tmin_germ_forFruits(x, crop, PRA):
 			x.all_crop_parameters_match_the_PRA_ones = False
 
 		# print("	OK")
+		
+		
+#================================================================================================================
 
 
 def ASSESS_Tmin(crop, x, PRA):
@@ -263,6 +281,9 @@ def ASSESS_Tmin(crop, x, PRA):
 		x.all_crop_parameters_match_the_PRA_ones = False
 
 
+#================================================================================================================
+
+
 def ASSESS_Water(crop, PRA, x):
 	"""INPUT:
 	*	x		is the class that contains all self variables used in all VegAu's functions
@@ -324,7 +345,7 @@ def ASSESS_Water(crop, PRA, x):
 
 		if CurrentMonth % 12 == 0:
 			#--------------------------------------
-			if x.TOLERdrought * ETc <= WaterResources(12, PRA, crop) <= ETc * x.TOLERflood:
+			if x.TOLERdrought * ETc <= WaterResources(12, seed_from(crop), PRA, crop) <= ETc * x.TOLERflood:
 				edible_WaterRqt.append(True)
 			else:
 				edible_WaterRqt.append(False)
@@ -408,6 +429,8 @@ def ASSESS_Water(crop, PRA, x):
 			x.all_crop_parameters_match_the_PRA_ones = False
 
 
+#================================================================================================================
+
 
 def ASSESS_pH(crop, PRA, x):
 	"""INPUT:
@@ -430,6 +453,8 @@ def ASSESS_pH(crop, PRA, x):
 	# else:
 		# print("The soil pH of this PRA matches to the crop requirements !")
 
+
+#================================================================================================================
 
 
 def PriorityAssessement(x, data):

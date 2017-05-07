@@ -35,6 +35,7 @@ class x:
 	decomposition_month = {}
 	ActualStand = {}
 	totalYields = {}
+	YIELD = 0
 	PestsDiseases_in_rotation = {}
 	VERIFprodBOT	= {}
 
