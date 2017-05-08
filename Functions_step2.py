@@ -397,16 +397,29 @@ def ASSESS_SeedingDate(PRA, x):
 		# assessing if the current crop can be planted before the end of the previous crop's GS.
 		# Else, it is deleted from the list 'edibleCrops'.
 
-		# seed_to = CORRseed_to(crop)  # makes sure that seed_to(crop) > seed_from(crop)
-		seeding_season_starts_before_the_end_of_the_previous_crop = (x.EndPreviousCrop_earlier) > seed_from(crop)
-		ends_after_its_shorter_GS_duration = x.EndPreviousCrop_earlier <= round(seed_to(crop)) <= x.EndPreviousCrop_later
+		# ============================================================================
+		earlierPlantingMonth = x.EndPreviousCrop_earlier % 12
+		laterPlantingMonth = x.EndPreviousCrop_later % 12
+		if earlierPlantingMonth == 0:
+			earlierPlantingMonth = 12
+		if laterPlantingMonth == 0:
+			laterPlantingMonth = 12
+		# ----------------------------------------------------------------------------
+		if laterPlantingMonth < earlierPlantingMonth:
+			no_plantation_delay = earlierPlantingMonth <= seed_from(crop) % 12 <= laterPlantingMonth + 12
+		else:
+			no_plantation_delay = earlierPlantingMonth <= seed_from(crop) % 12 <= laterPlantingMonth
+		# =============================================================================
 
-		if x.EndPreviousCrop_earlier%12 <= seed_from(crop)%12 <= x.EndPreviousCrop_later%12 :
+		seeding_season_starts_before_the_end_of_the_previous_crop = (earlierPlantingMonth) > seed_from(crop)
+		ends_after_its_shorter_GS_duration = earlierPlantingMonth <= round(seed_to(crop)) <= laterPlantingMonth
 
-			if x.EndPreviousCrop_earlier < seed_from(crop):
-				x.GSstart[crop]	= seed_from(crop)
-			elif x.EndPreviousCrop_earlier == seed_from(crop):
-				x.GSstart[crop]	= seed_from(crop) + 1
+		if no_plantation_delay :
+
+			if earlierPlantingMonth < seed_from(crop):
+				x.GSstart[crop]	= x.EndPreviousCrop_earlier + (seed_from(crop) - earlierPlantingMonth)
+			elif earlierPlantingMonth == seed_from(crop):
+				x.GSstart[crop]	= x.EndPreviousCrop_earlier + (seed_from(crop) - earlierPlantingMonth) + 1
 
 		elif seeding_season_starts_before_the_end_of_the_previous_crop and ends_after_its_shorter_GS_duration :
 			x.GSstart[crop]	= x.EndPreviousCrop_earlier + 1
@@ -414,7 +427,7 @@ def ASSESS_SeedingDate(PRA, x):
 		else:
 			x.edibleCrops = [x for x in x.edibleCrops if x != crop]
 			
-	print("""This PRA has edible crops which can be planted without any delay : """, x.edibleCrops)
+	print("""			This PRA has edible crops which can be planted without any delay : """, x.edibleCrops)
 	
 	#=========================================================================================
 	
@@ -424,18 +437,18 @@ def ASSESS_SeedingDate(PRA, x):
 	
 	if x.edibleCrops == []:
 		print("""
-		No seeding date of any x.edible crop matches exactly with the end of the previous crop:
-		Looking for the shortest delay among seeding dates of the PRA's x.edible crops...""")
+				No seeding date of any x.edible crop matches exactly with the end of the previous crop:
+				Looking for the shortest delay among seeding dates of the PRA's x.edible crops...""")
 		# restoring the 'edibleCrops' list
 		x.edibleCrops	=	list(sorted(x.edibleCropsID[PRA]))
 		# creating a new dictionary which bounds the crops indexes to the duration btw their earliest seeding date
 		# and the earliest end date of the previous crop's GS:
 		SelectEarlierPlanting = {}
 		for crop in x.edibleCrops:
-			if seed_from(crop) < x.EndPreviousCrop_later:
-				SelectEarlierPlanting[crop] = (seed_from(crop) + 12) - x.EndPreviousCrop_later
+			if seed_from(crop) < laterPlantingMonth:
+				SelectEarlierPlanting[crop] =  x.EndPreviousCrop_earlier + ((seed_from(crop) + 12) - laterPlantingMonth)
 			else:
-				SelectEarlierPlanting[crop] = seed_from(crop) - x.EndPreviousCrop_later
+				SelectEarlierPlanting[crop] = x.EndPreviousCrop_earlier +  (seed_from(crop) - laterPlantingMonth)
 		# selecting the earliest planting date among the crops from the 'SelectEarlierPlanting' dictionary:
 		PlantingDate_1 = sorted(SelectEarlierPlanting.values())[0]
 		PlantingDate_2 = sorted(SelectEarlierPlanting.values())[1]
@@ -450,8 +463,7 @@ def ASSESS_SeedingDate(PRA, x):
 			elif SelectEarlierPlanting[crop] == PlantingDate_2:
 				x.edibleCrops.append(crop)
 				x.GSstart[crop] = PlantingDate_2
-		print("""	OK
-		This PRA has no edible crops which can be planted without a delay. The shortest delay concerns : """, x.edibleCrops)
+		print("""			This PRA has no edible crops which can be planted without a delay. The shortest delay concerns : """, x.edibleCrops)
 
 
 
@@ -493,7 +505,7 @@ def ASSESS_WaterResources(PRA, x):
 				x.edibleCrops =  [x for x in x.edibleCrops if x != crop]
 			month += 1
 
-	print("The PRA's Tmin matches the crop's one for following crops : ", x.edibleCrops)
+	print("[{}][{}]		The PRA's Tmin matches the crop's one for following crops : {}".format(PRA, x.EndPreviousCrop_later, x.edibleCrops))
 
 	# =============================================================================================================
 	# loop for the Water Requirement Assessement :
@@ -532,7 +544,7 @@ def ASSESS_WaterResources(PRA, x):
 
 			month += 1
 
-	print("Water Resources verified. Following crops remain : ", x.edibleCrops)
+	print("[{}][{}]		Water Resources verified. Following crops remain : {}.".format(PRA, x.EndPreviousCrop_later, x.edibleCrops))
 
 	if x.edibleCropsWR.keys() == []:
 		# resetting the x.edibleCrops list and looking for later crops:
@@ -541,8 +553,8 @@ def ASSESS_WaterResources(PRA, x):
 			later_crops = [(seed_from(crop) + 12) - x.EndPreviousCrop_later for crop in x.edibleCrops]
 		else:
 			later_crops = [seed_from(crop) - x.EndPreviousCrop_later for crop in x.edibleCrops if (seed_from(crop) - x.EndPreviousCrop_later) >= 0]
-		x.EndPreviousCrop_earlier = min(later_crops)
-		x.EndPreviousCrop_earlier = (x.EndPreviousCrop_earlier + x.EndPreviousCrop_later) % 12 # nearest date from the previous 'x.EndPreviousCrop_later'
+
+		x.EndPreviousCrop_earlier = x.EndPreviousCrop_later + min(later_crops) # nearest date from the previous 'x.EndPreviousCrop_later'
 		x.EndPreviousCrop_later = int( x.EndPreviousCrop_earlier + 2)
 		# there is a hole in the rotation:
 		x.rotat[PRA].append( (None, x.EndPreviousCrop_earlier) )
@@ -576,8 +588,8 @@ def ASSESS_WaterResources(PRA, x):
 		for crop in x.edibleCropsWR:
 			x.edibleCropsWR[crop] = x.edibleCropsWR[crop]/WReval_max
 
-		print("""Standardization of the Water Resources indices [OK]
-	x.edibleCropsWR = """, x.edibleCropsWR)
+		print("[{}][{}]".format(PRA, x.EndPreviousCrop_later), """	Standardization of the Water Resources indices [OK]
+			x.edibleCropsWR = """, x.edibleCropsWR)
 
 
 		# at the end of these both loops, we get an 'edibleCropsWR' dictionary with a "WaterResources evaluation" (WReval)
@@ -629,10 +641,10 @@ def ASSESS_NutrientsMargin(PRA, x):
 
 		for nutrient in nutrients:
 			x.NutrientsMargin[crop][nutrient]=[]
-			monthInGS = 1
 
 			#-------------------------------------------------------------------------------------------------------------
 
+			monthInGS = 1
 			while monthInGS <= GSmin(crop):
 
 				#---------------------------------------------------------------------------------------------------------
@@ -645,9 +657,16 @@ def ASSESS_NutrientsMargin(PRA, x):
 				else :
 					margin_is_negative = ( x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - (removed[nutrient]/GSmin(crop) ) ) < 0
 
+				# ---------------------------------------------------------------------------------------------------------
 
 				if margin_is_negative :
-					del x.CCedibility[crop]
+					print("Not enough {} to grow {}. [DELETED FROM x.edibleCrops]".format(nutrient, prod_EN(crop)))
+					del x.NutrientsMargin[crop]
+					x.edibleCrops = [x for x in x.edibleCrops if x!= crop]
+					if [remainingCrop for remainingCrop in x.edibleCrops if prodCAT(remainingCrop) != 0] == []:
+						x.rotat[PRA].append( ('Limiting factor', nutrient) )
+						x.LimitingFactorReached = True
+					break
 
 				else:
 					# average removed and fixed nutrient for one month of GSmin(crop):
@@ -657,27 +676,33 @@ def ASSESS_NutrientsMargin(PRA, x):
 						((removed[nutrient] - fixedN(crop)) /GSmin(crop) )
 						)
 
-					x.NutrientsMargin[crop][nutrient].append(
-					x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - (removed[nutrient]/GSmin(crop))
-					)
+					else:
+						x.NutrientsMargin[crop][nutrient].append(
+						x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - (removed[nutrient]/GSmin(crop))
+						)
+
 
 					#END if (margin not negative) --------------------------------------------------------------------------
 
 				monthInGS += 1
-
 				#END while (end of GSmin) ----------------------------------------------------------------------------------
-
-
-			x.NutrientsMargin[crop][nutrient] = sum(x.NutrientsMargin[crop][nutrient]) / len(x.NutrientsMargin[crop][nutrient])
+			if crop in x.NutrientsMargin.keys():
+				x.NutrientsMargin[crop][nutrient] = sum(x.NutrientsMargin[crop][nutrient]) / len(x.NutrientsMargin[crop][nutrient])
+			else:
+				break
 			#END for (nutrient in x.NutrientsMargin[crop].keys())-------------------------------------------------------------
 
 		#END for (crop in x.edibleCrops)--------------------------------------------------------------------------------------
-	print("""Nutrient Margin Assessment [OK]""")
 
-	if x.edibleCrops == []:
-		NutrientsSufficient = False
-		print("""There is not enough nutrients anymore to feed the crop without external fertilizers.
-	END OF THE ROTATION""")
+	print("""			Nutrient Margin Assessment [OK]""")
+
+	# NORMALLY, THE FOLLOWING IS TAKEN INTO ACCOUNT BY THE MAIN while LOOP :
+	# ---> while [x for x in x.ActualStand[PRA].values() if x > 0] != []
+
+	# if x.edibleCrops == []:
+	# 	x.NutrientsSufficient = False
+	# 	print("""			There is not enough nutrients anymore to feed the crop without external fertilizers.
+	# END OF THE ROTATION""")
 
 
 #================================================================================================================
@@ -707,7 +732,7 @@ def ASSESS_Nutrients(x, PRA):
 
 	MAXvalue = {}
 
-	for crop in x.NutrientsMargin:
+	for crop in x.edibleCrops:
 		MAXvalue = {'N': [], 'P': [], 'K': [], 'Na': [],'Mg': [], 'Ca': [], 'Mn': [], 'Fe': [], 'Cu': []}
 		#----------------------------------------------------------------------------------------------
 		for nutrient in MAXvalue.keys():
@@ -719,7 +744,7 @@ def ASSESS_Nutrients(x, PRA):
 
 
 	# Margin standardization, second step (dividing by the MAXvalue to get a percentage):
-	for crop in x.NutrientsMargin:
+	for crop in x.edibleCrops:
 		#----------------------------------------------------------------------------------------------
 		for nutrient in MAXvalue.keys():
 			x.NutrientsMargin[crop][nutrient]	=	x.NutrientsMargin[crop][nutrient]	/	MAXvalue[nutrient]
@@ -752,23 +777,22 @@ def ASSESS_PestDiseases(x):
 
 		if prodBOT(crop) not in x.VERIFprodBOT.keys():
 			x.VERIFprodBOT[prodBOT(crop)] = {'Duration since previous crop' : 0, 'Crops in Rotation' : 1}
-		if int(period(crop)) == 0:
 			x.edibleCropsPnD[crop] = 1
 
-		else: # if prodBOT == 0, ZeroDivisionError
+		elif int(period(crop)) == 0: # if prodBOT == 0, ZeroDivisionError : cover crops and trees have no return period
+			x.edibleCropsPnD[crop] = 1
 
-			duration_since_previous_crop		=	x.VERIFprodBOT[prodBOT(crop)]['Duration since previous crop']
+		else:
+			duration_since_previous_crop	=	x.VERIFprodBOT[prodBOT(crop)]['Duration since previous crop']
 
 			x.edibleCropsPnD[crop] = (duration_since_previous_crop / 12) / period(crop)
 			# theoritically, if x.edibleCropsPnD[prodBOT(crop)] >= 1, no risk -> the highest the ratio, the better the conditions (like the other indexes, important)
-		
-	# Finding the highest index in x.edibleCropsPnD
-	indexMAX = max(x.edibleCropsPnD.values())
-	
+
+
 	for crop in x.edibleCropsPnD:
-		if int(period(crop)) != 0: # x.edibleCropsPnD[crop] has already been set to 1 because there are no Pests and
-									# Diseases risks to rotation occurrence (trees and shrubs: no rotation !)
-			x.edibleCropsPnD[crop] = x.edibleCropsPnD[crop] / indexMAX
+		if x.edibleCropsPnD[crop] != 1: # x.edibleCropsPnD[crop] has already been set to 1 because there have no Pests and
+										# Diseases risks to rotation occurrence (trees, shrubs and CC: no rotation !)
+			x.edibleCropsPnD[crop] = x.edibleCropsPnD[crop] / max(x.edibleCropsPnD.values())
 			#the obtained values are yet all comprised between 1 and 0, with 1 the very best one.
 
 
@@ -776,7 +800,7 @@ def ASSESS_PestDiseases(x):
 #================================================================================================================
 
 
-def SELECT_CashCrop(x, PRA):
+def SELECT_CashCrop(x, PRA, data):
 	"""INPUT:
 	*	x	is the class that contains all self variables used in all VegAu's functions
 
@@ -820,6 +844,7 @@ def SELECT_CashCrop(x, PRA):
 
 
 	for crop in x.edibleCrops:
+
 		if Final_Edibility_Index[crop] == max( Final_Edibility_Index.values() ):
 			FinalSelection.append(crop)
 
@@ -827,46 +852,45 @@ def SELECT_CashCrop(x, PRA):
 		x.SelectedCrop = FinalSelection[0]
 	#-----------------------------------------------
 	else: # considering the general priority index :
-		priority = [PRIORITYgeneral(crop) for crop in FinalSelection]
-		FinalSelection = [x for x in FinalSelection if x == max(priority)]
+		priority = [ data.plants[crop]['PRIORITYgeneral'] for crop in FinalSelection ]
+		FinalSelection = [x for x in FinalSelection if data.plants[x]['PRIORITYgeneral'] == max(priority)]
 
 		if len(FinalSelection) == 1:
 			x.SelectedCrop = FinalSelection[0]
 		# -----------------------------------------------
 		else: # considering the priority index for fruits :
-			priority = [PRIORITYfruits(crop) for crop in FinalSelection]
-			FinalSelection = [x for x in FinalSelection if x == max(priority)]
+			priority = [data.plants[crop]['PRIORITYfruits'] for crop in FinalSelection]
+			FinalSelection = [x for x in FinalSelection if data.plants[x]['PRIORITYfruits'] == max(priority)]
 
 			if len(FinalSelection) == 1:
 				x.SelectedCrop = FinalSelection[0]
 			# -----------------------------------------------
 			else: # considering the priority index for textiles :
-				priority = [PRIORITYtextile(crop) for crop in FinalSelection]
-				FinalSelection = [x for x in FinalSelection if x == max(priority)]
+				priority = [data.plants[crop]['PRIORITYtextile'] for crop in FinalSelection]
+				FinalSelection = [x for x in FinalSelection if data.plants[x]['PRIORITYtextile'] == max(priority)]
 
 				if len(FinalSelection) == 1:
 					x.SelectedCrop = FinalSelection[0]
 				# -----------------------------------------------
 				else:
 					# At least, chosing the crop with the lowest ratioADAPT (crop which have the lesser geographic adaptability in the study area, here France)
-					priority = [ratioADAPT(crop) for crop in FinalSelection]
-					FinalSelection = [x for x in FinalSelection if x == min(priority)]
+					priority = [data.plants[crop]['ratioADAPT'] for crop in FinalSelection]
+					FinalSelection = [x for x in FinalSelection if data.plants[x]['ratioADAPT'] == min(priority)]
 
 					x.SelectedCrop = min(FinalSelection)
 
-	print("The selected crop is : {} ({}).".format(prod_EN(x.SelectedCrop), prodID(x.SelectedCrop)))
+	print("			The selected crop is : {} ({}).".format(prod_EN(x.SelectedCrop), prodID(x.SelectedCrop)))
 
 
 	# ================================================================
 	# Updating x.GSstart : it becomes an integer and corresponds to the optimal seeding date of the SelectedCrop
-	x.GSstart = x.GSstart[x.SelectedCrop]
-	# ================================================================
+	x.GSstart = int( x.GSstart[x.SelectedCrop] )
 
 
 	# =========================================================================================================
 	# == YIELD CALCULATION =====================================================================================
 
-	print("Calculating the yield for the Selected Crop...")
+	print("[{}][{}]		Calculating the yield for the Selected Crop...".format(PRA, x.EndPreviousCrop_later))
 
 	x.YIELD *= x.edibleCropsPnD[x.SelectedCrop]  # adapt the yield proportionnaly to the Pests and Diseases risks.
 
@@ -878,14 +902,14 @@ def SELECT_CashCrop(x, PRA):
 	# Notice: Yields are in tons, not in t/ha anymore ! -> preparation for the assessment of the nutritional requirements
 
 	# for the next loop, the crop search occurs from the earlier to the later end of the SelectedCrop's GS:
-	x.EndPreviousCrop_earlier = x.GSstart + GSmin(x.SelectedCrop)
-	x.EndPreviousCrop_later = x.GSstart + GSmax(x.SelectedCrop)
+	x.EndPreviousCrop_earlier = int(x.GSstart + GSmin(x.SelectedCrop))
+	x.EndPreviousCrop_later = int(x.GSstart + GSmax(x.SelectedCrop))
 
 
 	# =======================================================================================================
 	# Taking into account the WaterRequirement on the GS and the Next Crop -> adapting x.EndPreviousCrop_later
 
-	print("Adapting the later selected crop's harvest date according to the PRA's water ressources...")
+	print("[{}][{}]		Adapting the later selected crop's harvest date (actually {}) according to the PRA's water ressources...".format(PRA, x.EndPreviousCrop_later, MonthID(x.EndPreviousCrop_later)))
 
 	month = int(x.EndPreviousCrop_earlier)
 	CORR_TOLERdf(x.SelectedCrop, x)
@@ -902,7 +926,7 @@ def SELECT_CashCrop(x, PRA):
 			break
 		month += 1
 
-	print("The later harvesting date is in {}.".format(MonthID(month)))
+	print("[{}][{}]		The later harvesting date is in {}.".format(PRA, x.EndPreviousCrop_later, MonthID(month)))
 
 
 
@@ -922,12 +946,7 @@ def UPDATE_EndPreviousCrop_rotat(PRA, x):
 		x.rotat[PRA].append(('start', 3))
 
 	x.EndPreviousCrop_earlier	= int((x.GSstart + GSmin(x.SelectedCrop)))
-	if x.EndPreviousCrop_earlier % 12 == 0:
-		x.EndPreviousCrop_earlier = 12
-
 	x.EndPreviousCrop_later		= int((x.GSstart + GSmax(x.SelectedCrop)))
-	if x.EndPreviousCrop_earlier % 12 == 0:
-		x.EndPreviousCrop_earlier = 12
 
 #================================================================================================================
 #================================================================================================================
@@ -945,7 +964,7 @@ def ASSESS_Water_CompanionCrop_for_SelectedCrop(x, PRA):
 
 	try :
 		assert x.edibleCompanionCrops != []
-		print("Looking for an eventual Companion Crop...")
+		print("[{}][{}]	Looking for an eventual Companion Crop...".format(PRA, x.EndPreviousCrop_later))
 		WaterResources_are_Sufficient = True
 		CurrentMonth = x.GSstart % 12
 
@@ -1082,7 +1101,7 @@ def ASSESS_Nutrients_CompanionCrop_for_SelectedCrop(x):
 	try:
 		assert x.edibleCompanionCrops != []
 
-		print("Calculatin nutrient margins for edible Companion Crops...")
+		print("[{}][{}]		Calculatin nutrient margins for edible Companion Crops...".format(PRA, x.EndPreviousCrop_later))
 
 		for crop in x.edibleCompanionCrops :
 
@@ -1187,7 +1206,7 @@ def SELECT_CompanionCrop(x, PRA):
 
 			# =========================================================================================================
 		except AssertionError:
-			print("There are no edible Companion Crop for the currently Selected Crop.")
+			print("[{}][{}]		There are no edible Companion Crop for the currently Selected Crop.".format(PRA, x.EndPreviousCrop_later))
 
 
 #================================================================================================================
@@ -1205,7 +1224,7 @@ def APPLY_ResiduesDecomposition_of_PreviousCrops(PRA, x):
 	"""
 	
 	
-	print("Calculating the nutrients that are returned by the previous crops...")
+	print("[{}][{}]		Calculating the nutrients that are returned by the previous crops...".format(PRA, x.EndPreviousCrop_later))
 	monthInGS = 1
 	
 	
@@ -1222,9 +1241,12 @@ def APPLY_ResiduesDecomposition_of_PreviousCrops(PRA, x):
 	for i in sorted(x.decomposition_month.keys()) :
 		try:
 			x.decomposition_month[i] = x.decomposition_month[i+1]	# updating mineralization delay: mineralization delay reduces each month by 1 month (while GS)
-		except KeyError:
-			x.decomposition_month[i] = 0 # i+1 does not exist for the last value.
 
+		except KeyError: # the last month (i) has no following month (i+1)
+			# --> rebuilding the dict acc. to the initial NutrientList (allows to add nutrients in the list and be sure
+			#     that the change will be taken into account in the whole script
+			for nutrient in x.ActualStand:
+				x.decomposition_month[i][nutrient] = 0
 
 #================================================================================================================
 #================================================================================================================
@@ -1245,7 +1267,7 @@ def APPLY_ResiduesDecomposition_of_CompanionCrop(x):
 
 	Residues = {"N": returnedN(x.SelectedCC), "P": returnedP(x.SelectedCC), "K": returnedK(x.SelectedCC), "OM": returnedOM(x.SelectedCC)}
 
-	print("Simulating the Residues Decomposition for the selected Companion Crop...")
+	print("			Simulating the Residues Decomposition for the selected Companion Crop...")
 
 	i = 1
 	# to avoid an infinite number of months in the dict 'month', the loop stops automatically after 8 years (96 months):
@@ -1294,7 +1316,7 @@ def APPLY_SelectedCC_Kill(PRA, x):
 			x.ActualStand[PRA]['Cu'] -= removedCu(x.SelectedCC)
 
 
-		print("""Simulating the residues decomposition of the Selected Companion Crop...""")
+		print("[{}][{}]".format(PRA, x.EndPreviousCrop_later), """	Simulating the residues decomposition of the Selected Companion Crop...""")
 		APPLY_ResiduesDecomposition_of_CompanionCrop(x)
 		print("	OK")
 		#END if
@@ -1337,7 +1359,7 @@ def APPLY_ResiduesDecomposition_of_SelectedCrop(x):
 			i += 1 # switching to next month
 	except TypeError:
 		print("TypeError: 'int' object is not subscriptable")
-		print(""""Type of :
+		print("[{}][{}]".format(PRA, x.EndPreviousCrop_later), """	"Type of :
 		x.decomposition_month --> {}""".format(type(x.decomposition_month)))
 #----------------------------------------------------------------------------------------------------------------
 
@@ -1358,7 +1380,7 @@ def APPLY_SelectedCrop_Harvest(PRA, x):
 	monthInGS = 1
 	end_of_the_shortest_GS = GSmin(x.SelectedCrop)
 	# Calculating the nutrients that are REMOVED while the GS of the newly x.SelectedCrop:
-	print("Simulating the nutrient uptakes by the Selected Crop...")
+	print("			Simulating the nutrient uptakes by the Selected Crop...")
 	
 	while monthInGS <= end_of_the_shortest_GS:
 		x.ActualStand[PRA]['N'] -= removedN(x.SelectedCrop)
@@ -1397,7 +1419,7 @@ def UPDATE_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x):
 	*	updated 'PestsDiseases_in_rotation' dictionary
 	"""
 
-	print("Verifying if the minimum return period is respected...")
+	print("			Verifying if the minimum return period is respected...")
 
 
 	# ==================================================
@@ -1418,19 +1440,21 @@ def UPDATE_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x):
 		if x.VERIFprodBOT[prodBOT(x.SelectedCrop)]['Duration since previous crop']//12 < period(x.SelectedCrop):
 
 			# if the minimum return period is not respected:
-			print("""
-
-			There is already a crop from the same botanic family of the x.SelectedCrop in the rotation...
-			Incrementing the 'PestsDiseases_in_rotation' index for the botanic family of this crop """)
-
 			#------------------------------------------------------------------------------------
 			x.VERIFprodBOT[prodBOT(x.SelectedCrop)]['Duration since previous crop'] = 0
 
 			# adding an entry to the dict 'PestsDiseases_in_rotation' for this crop or incrementing its already existing value:
-			if PRA in PestsDiseases_in_rotation.keys():
-					PestsDiseases_in_rotation[PRA] += 1
+			if PRA in x.PestsDiseases_in_rotation.keys():
+					x.PestsDiseases_in_rotation[PRA] += 1
 			else:
-				PestsDiseases_in_rotation[PRA] = 1
+				x.PestsDiseases_in_rotation[PRA] = 1
+
+			print("""
+
+			There is already a crop from the same botanic family of the x.SelectedCrop in the rotation...
+			Incrementing the 'PestsDiseases_in_rotation' index for the botanic family of this crop (PestsDiseases_in_rotation = {}).""".format(
+				x.PestsDiseases_in_rotation[PRA]))
+
 
 		else:
 			x.VERIFprodBOT[prodBOT(x.SelectedCrop)]['Duration since previous crop'] = 0

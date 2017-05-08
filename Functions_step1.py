@@ -529,13 +529,13 @@ def PriorityAssessement(x, data):
 				### surface of the territory where the crop could grow/total agricultural surface in France :
 
 				ratioADAPT = x.prodSURFACE[crop] / TotalAgriSurface
-				data.plants[crop]['ratioADAPT'] = ratioADAPT
+				data.plants[crop]['ratioADAPT'] = round( ratioADAPT, 4)
 
 				#======================================
 				#=== FRUIT TREES
 
 				if prodCAT(crop) == 1 or prodCAT(crop) == 2 :
-					# print("""The current crop is a tree or shrub.
+					# print("[{}][{}]".format(PRA, x.EndPreviousCrop_later), """	The current crop is a tree or shrub.
 					# Calculating the priority indices...""")
 
 					if ratioADAPT <= 0.6:
@@ -628,7 +628,7 @@ def PriorityAssessement(x, data):
 				#======================================
 				#===  OTHER CROPS
 				else:
-					#print("""The current crop is current cash crop.
+					#print("[{}][{}]".format(PRA, x.EndPreviousCrop_later), """	The current crop is current cash crop.
 					#	PRIORITYgeneral = 3""")
 					data.plants[crop]['PRIORITYgeneral'] = 3 # low priority
 					data.plants[crop]['PRIORITYfruits']	= 0 # not a fruit/nut tree

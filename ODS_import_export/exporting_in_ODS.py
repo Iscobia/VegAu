@@ -262,7 +262,7 @@ for PRA in rotat.keys():
 	crops_list = [ i for i, tuple in enumerate(rotat[PRA]) ] # gives the list of crops in the rotation
 	PRArotat[PRArow, 2].value	=	crops_list
 	PRArotat[0, 3].value 		=  'Pests and Diseases'
-	PRArotat[PRArow, 3].value	=	PestsDiseases_in_rotation[PRA] # give a integer that corresponds to the crops that may have been affected by pests or diseasess
+	PRArotat[PRArow, 3].value	=	x.PestsDiseases_in_rotation[PRA] # give a integer that corresponds to the crops that may have been affected by pests or diseasess
 	PRArow = rotat[PRA]['PRA row in PRAvirgin']
 	#-------------------------------------------------------------------------------------------------------------
 	

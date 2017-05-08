@@ -23,7 +23,6 @@ class x:
 	CCedibility = {}	# dictionary from ASSESS_Water_CompanionCrop... with the different nutrients margins
 						# ---> used if the selected Companion Crop needs more nutrients than the soil can provide.
 	prodSURFACE = {}
-	RotatMonth = 0
 	GSstart = 0
 	# EndPreviousCrop = 0
 	EndPreviousCrop_earlier = 0
@@ -31,6 +30,8 @@ class x:
 	SelectedCrop =	None
 	SelectedCC	=	None
 	PreviouslySelectedCrop = None
+
+	LimitingFactorReached = False
 
 	decomposition_month = {}
 	ActualStand = {}

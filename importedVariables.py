@@ -674,7 +674,7 @@ def OM_retention_capacity(x, PRA):
 				environment[PRA][72] = 9
 
 		else:
-			print("ERROR : the soil type of the PRA {} cannot be found in the database.".format(PRA))
+			print("ERROR : the soil type of the PRA {} cannot be found in the database.".format(PRA, x.EndPreviousCrop_later))
 			return 1
 
 		return environment[PRA][72]
