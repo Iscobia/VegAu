@@ -280,8 +280,44 @@ def ASSESS_Tmin(crop, x, PRA):
 	if max(PRAedibTest) < GSmin(crop):
 		x.all_crop_parameters_match_the_PRA_ones = False
 
+# ================================================================================================================
 
-#================================================================================================================
+def ASSESS_sunshine(crop, PRA, x):
+	"""INPUT:
+	*	x		is the class that contains all self variables used in all VegAu's functions
+	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
+	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
+
+	OUTPUT:
+	for citrus, melons and trees like avocados, this function calculates a sunshine ratio in the assessment
+	of citrus, melons and other exotics trees and thus avoids some aberrations like melons and citrus in the
+	northern, couldy regions !"""
+
+	x.edibleSunshine = []
+	crop_needs_sun = 'CTR' in crop or 'EXOT' in crop or 'MLN' in crop
+
+	#-----------------------------------------------------------------
+	GrowingMonth = 1
+	CurrentMonth = seed_from(crop)
+	# -----------------------------------------------------------------
+
+	while GrowingMonth <= maximum_growing_season_duration:
+		enough_sunshine = SOLmoy_ratio_northernCountries(month, PRA) <= 0.8
+
+		if crop_needs_sun:
+			if not enough_sunshine:
+				x.all_crop_parameters_match_the_PRA_ones == False
+				break
+			else :
+				x.edibleSunshine.append(crop)
+		else:
+			x.edibleSunshine.append(crop)
+
+		GrowingMonth += 1
+		CurrentMonth += 1
+
+
+	#================================================================================================================
 
 
 def ASSESS_Water(crop, PRA, x):
@@ -345,7 +381,8 @@ def ASSESS_Water(crop, PRA, x):
 
 		if CurrentMonth % 12 == 0:
 			#--------------------------------------
-			if x.TOLERdrought * ETc <= WaterResources(12, seed_from(crop), PRA, crop) <= ETc * x.TOLERflood:
+			# if x.TOLERdrought * ETc <= WaterResources(12, seed_from(crop), PRA, crop, x) <= ETc * x.TOLERflood:
+			if x.TOLERdrought * ETc <= WaterResources(12, seed_from(crop), PRA, crop, x):
 				edible_WaterRqt.append(True)
 			else:
 				edible_WaterRqt.append(False)
@@ -353,7 +390,8 @@ def ASSESS_Water(crop, PRA, x):
 
 		else:
 			#--------------------------------------
-			if x.TOLERdrought * ETc <= WaterResources(CurrentMonth%12, PRA, crop) <= ETc * x.TOLERflood:
+			# if x.TOLERdrought * ETc <= WaterResources(CurrentMonth % 12, GSstart[crop], PRA, crop, x) <= ETc * x.TOLERflood:
+			if x.TOLERdrought * ETc <= WaterResources(CurrentMonth%12, GSstart[crop], PRA, crop, x):
 				edible_WaterRqt.append(True)
 			else:
 				edible_WaterRqt.append(False)

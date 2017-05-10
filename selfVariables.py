@@ -7,15 +7,17 @@ class x:
 
 	TOLERdrought = 0
 	TOLERflood	= 0
-	edible = []
 	edible_Tmin = []
+	edibleSunshine = []
 	edibleCropsID = {}
 	edibleCropsEN = {}
 	edibleCropsFR = {}
 	edibleCropsDE = {}
 	
 	#-- from step 2:
-	edibleCrops = {}
+	edibleCrops     = {}
+	laterCrops      = {}
+	DelayIndex      = {}
 	edibleCropsPnD	= {}
 	WRmargin_moy	= {}
 	edibleCropsWR	= {}
@@ -39,7 +41,6 @@ class x:
 	YIELD = 0
 	PestsDiseases_in_rotation = {}
 	VERIFprodBOT	= {}
-
 	rotation_length = {}
 	rotat = {}
 

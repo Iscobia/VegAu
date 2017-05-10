@@ -105,9 +105,8 @@ def PRAedibilityTest(x, data):
 	The import of this sheet is ensured by the module 'importingODS.py'
 	"""
 
-	country		=	sorted(data.environment.keys())
-	database	=	sorted(data.plants.keys())
-
+	country		    =	sorted(data.environment.keys())
+	database	    =	sorted(data.plants.keys())
 
 	#===========================================================================
 	#===========================================================================
@@ -124,6 +123,7 @@ def PRAedibilityTest(x, data):
 								  "Mg": mgo_med(PRA), "Ca": cao_med(PRA), "Mn": mned_med(PRA), "Fe": feed_med(PRA),
 								  "Cu": cued_med(PRA), "OM": corgox_med(PRA)}
 			print("Edibility assessment for the PRA {}...".format(IDPRA(PRA)))
+
 
 			for crop in database:
 				if crop != 'headers_full' and crop != 'IDXinit' and crop != 'headers_ID':
@@ -143,19 +143,32 @@ def PRAedibilityTest(x, data):
 								ASSESS_Tmin_germ_forFruits(x, crop, PRA)
 							else:
 								ASSESS_Tmin( crop, x, PRA)
+							assert x.all_crop_parameters_match_the_PRA_ones
+
+							#------------------------------------------------------
+
+							ASSESS_sunshine(crop, PRA, x)
+							assert x.all_crop_parameters_match_the_PRA_ones
+
+							# ------------------------------------------------------
 
 							# print("x.all_crop_parameters_match_the_PRA_ones = ",  x.all_crop_parameters_match_the_PRA_ones)
-							if not x.all_crop_parameters_match_the_PRA_ones :
-								break
+							assert x.all_crop_parameters_match_the_PRA_ones
+
+							# ------------------------------------------------------
 
 							ASSESS_Water( crop, PRA, x)
 							# print("x.all_crop_parameters_match_the_PRA_ones = ",  x.all_crop_parameters_match_the_PRA_ones)
-							if not x.all_crop_parameters_match_the_PRA_ones :
-								break
+							assert x.all_crop_parameters_match_the_PRA_ones
+
+							# ------------------------------------------------------
+
 							ASSESS_pH(crop, PRA, x)
 
 						except ValueError : # if there is a missing variable in the database
 							pass
+						except AssertionError:
+							break
 
 						# print("""This crop is edible for the current PRA ! :D""")	# if the code runs till this line, the crop is edible
 																					# because x.all_crop_parameters_match_the_PRA_ones == True
@@ -252,12 +265,12 @@ def ASSESS_PRArotation(x, data):
 	#~ from Functions_step2 import *
 
 
-	country		=	sorted(data.environment.keys())
+	country		=	sorted( list(data.environment.keys()) )
 	
 	#===========================================================================
 	#===========================================================================
 	
-	for PRA in country:
+	for PRAcursor, PRA in enumerate(country):
 		if PRA != 'headers_full' and PRA != 'headers_ID':
 			print("""
 			Building a rotation for PRA n°{}...
@@ -319,14 +332,12 @@ def ASSESS_PRArotation(x, data):
 						# ---> assert x.EndPreviousCrop_Later >= 120 after the UPDATE function
 						# The while loop seemed not to be enough...
 
-					x.edibleCrops = list(x.edibleCropsID[PRA])
-
 					# =======================================================================================================
 					# =======================================================================================================
 
 					if the_selected_crop_is_a_permanent_crop:
 
-						print("[{}][{}]		The Selected Crop is a permanent crop. Assessing crop impacts for the Current year (first month of the growing season = {})...".format(PRA, x.EndPreviousCrop_later, MonthID(x.GSstart)))
+						print("[{}][{}]	The Selected Crop is a permanent crop. Assessing crop impacts for the Current year (first month of the growing season = {})...".format(PRA, x.EndPreviousCrop_later, MonthID(x.GSstart)))
 
 						#~ CROProw = CROProw_PLANTS(x.SelectedCrop)
 						#~ CROPcol = CROPcol_PRAedibility(x.SelectedCrop)
@@ -338,7 +349,7 @@ def ASSESS_PRArotation(x, data):
 
 						x.edibleCrops=[x.SelectedCrop]
 
-						print("[{}][{}]		Simulating the Nutrients gain and removal...".format(PRA, x.EndPreviousCrop_later))
+						print("[{}][{}]	Simulating the Nutrients gain and removal...".format(PRA, x.EndPreviousCrop_later))
 						ASSESS_Nutrients(x, PRA)
 
 						SelectedCrop_Harvest(PRA, x)
@@ -349,7 +360,7 @@ def ASSESS_PRArotation(x, data):
 						# yet, we can update VERIFYprodBOT, x.GSstart and the cells from PRArotat by adding the prodID of the previously selected crop
 						# from the seed_from(x.PreviouslySelectedCrop) to the seed_from(x.SelectedCrop) non inclusive:
 
-						print("[{}][{}]		Updating x.GSstart and x.VERIFprodBOT...".format(PRA, x.EndPreviousCrop_later))
+						print("[{}][{}]	Updating x.GSstart and x.VERIFprodBOT...".format(PRA, x.EndPreviousCrop_later))
 
 						# the SelectedCrop just never changes (tree --> permanent) : the next start
 						# of its growing season will be one year later
@@ -367,16 +378,20 @@ def ASSESS_PRArotation(x, data):
 					# =======================================================================================================
 
 					else:
+						x.edibleCrops = list(x.edibleCropsID[PRA])
 
+						x.edibleCrops = [c for c in x.edibleCrops if c != 'CC-GRASSorchard'] # excluding orchard grass from edible crops
 						x.GSstart = {} # key = prodID, value = first month of the potential growing season
 
-						print("[{}][{}]		Looking for the Optimal Seeding Date... (edible crops are : {})".format(PRA, x.EndPreviousCrop_later, x.edibleCrops))
+						print("[{}][{}]	Looking for the Optimal Seeding Date... (edible crops are : {})".format(PRA, x.EndPreviousCrop_later, x.edibleCrops))
 
 						# selecting the crops according to their planting date:
 						ASSESS_SeedingDate(PRA, x)
 						# after this function, we have :
 						#		* a list 'edibleCrops' with the index of every edible crop for this x.rotation's time according to the sawing/planting date.
 						#		* a dictionary 'GSstart' with: keys = crop's indexes, values = first GS month
+
+
 
 						# print("Looking for the optimal Water Resources... (edible crops are : {})". format(x.edibleCrops))
 
@@ -387,7 +402,8 @@ def ASSESS_PRArotation(x, data):
 						#			*	keys = CROProw
 						#			*	values = standardized "WaterResources evaluation" (WReval)
 
-						print("			Checking the nutrient requirements for remaining crops... (edible crops are : {})". format(x.edibleCrops))
+						print("""
+[{}][{}]	Checking the nutrient requirements for remaining crops...""". format(PRA, x.EndPreviousCrop_later))
 
 						ASSESS_Nutrients(x, PRA)
 						# after this function, we get:
@@ -395,6 +411,9 @@ def ASSESS_PRArotation(x, data):
 						#	* a x.NutrientsMargin dictionary with:
 						#			*	keys = CROProw
 						#			*	values = standardized nutrients margin
+
+						# VERIF_lastCrops_not_CC(x, PRA)
+
 						assert x.LimitingFactorReached == False
 
 
@@ -402,11 +421,9 @@ def ASSESS_PRArotation(x, data):
 
 						print("			Checking the pests and diseases risks for remaining crops... (edible crops are : {})". format(x.edibleCrops))
 
-						ASSESS_PestDiseases(x)
+						ASSESS_PestDiseases(x, PRA)
 						# returns an updated ediblePnD dictionary with, for each crop, an index according to the risks of pests and diseases
 						# relative to a too short period between several crops of a same botanic family
-
-						print("LimitingFactorReached = {}".format(x.LimitingFactorReached))
 
 						print("			Selecting the best crop for the {}th month of the Rotation ({})...".format(x.EndPreviousCrop_earlier, MonthID(x.EndPreviousCrop_earlier)))
 
@@ -418,7 +435,7 @@ def ASSESS_PRArotation(x, data):
 						assert x.EndPreviousCrop_later <= 120
 
 
-						print("[{}][{}]		It will mature until the {}th (earlier : {}) or the {}th (later : {}) month of the rotation.".
+						print("[{}][{}]	It will mature until the {}th (earlier : {}) or the {}th (later : {}) month of the rotation.".
 							  format(PRA, x.EndPreviousCrop_later, int(x.EndPreviousCrop_earlier), MonthID(x.EndPreviousCrop_earlier), x.EndPreviousCrop_later, MonthID(x.EndPreviousCrop_later) ))
 
 						# assessing if there is possible to mix the x.SelectedCrop with a CompanionCrop
@@ -451,29 +468,35 @@ def ASSESS_PRArotation(x, data):
 				except AssertionError:
 					break
 
+			x.rotat[PRA].append((x.PreviouslySelectedCrop, x.SelectedCC, x.EndPreviousCrop_later))
+
+
 			# The following variable exists only to inform the user in the last print.
-			rotation_crops = [crop for (crop, last_month) in x.rotat[PRA]]
+			rotation_crops = [crop for (crop, companion, last_month) in x.rotat[PRA] if (crop != 'start' and crop != 'Limiting factor' and 'delay' not in crop)]
 
 			if x.LimitingFactorReached == True :
 				print("""
-				[{}][{}]	END OF THE ROTATION : Nutrients are not sufficient.
+[{}][{}]	END OF THE ROTATION : Nutrients are not sufficient (Limiting factor is {}).
 
-				Following crops succeeded until {}: {}
-				""".format( PRA, x.EndPreviousCrop_later, MonthID(x.EndPreviousCrop_later), rotation_crops ))
+{} different crops out of {} succeeded until {}: {}
+
+				""".format( PRA, x.EndPreviousCrop_later, x.rotat[PRA][-1][1], len(list(set(rotation_crops))), len(rotation_crops), MonthID(x.EndPreviousCrop_later), rotation_crops ))
+
 			else:
 				print("""
-								[{}][{}]	END OF THE ROTATION : The rotation reached 10 years --> switching to next PRA
+[{}][{}]	END OF THE ROTATION : The rotation reached 10 years --> switching to next PRA
 
-								Following crops succeeded until {}: {}
-								""".format(PRA, x.EndPreviousCrop_later, MonthID(x.EndPreviousCrop_later),
+{} different crops out of {} succeeded until {}: {}
+								""".format(PRA, x.EndPreviousCrop_later, len(list(set(rotation_crops))) ,len(rotation_crops), MonthID(x.EndPreviousCrop_later),
 				                           rotation_crops))
 
-			x.rotation_length[PRA] = (x.GSstart - 2) # because it started in March
+			x.rotation_length[PRA] = (x.EndPreviousCrop_later - 2)  # because it started in March
 
-			print("""Switching to PRA {} (index {})
+
+			print("""Switching to PRA {} [{}%]
 
 			=============================================================================
-			      """.format(IDPRA(PRA), PRA))
+			      """.format(PRA, round((PRAcursor/(len(environment)-2)) * 100, 3)))
 
 			# END for (pra in country)
 		

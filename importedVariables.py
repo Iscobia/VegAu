@@ -1277,6 +1277,49 @@ def SOLmoy(month, PRA):
 			i = month - 1
 		return environment[PRA][269+i]
 
+def SOLmoy_max(month): # unused : only if people from other (shiny !) country use the programm
+	"""INPUT:
+	*   month is an integer between 1 and 12
+	*   month can be 'an' ('year' in French) for a yearly value
+
+	This function calculates the maximum sunshine in the whole country for a given month.
+	It allows to do get a sunshine ratio in the assessment of citrus, melons and other exotics trees
+	and thus avoid some aberrations (melons and citrus in the northern, couldy regions !)."""
+
+
+	month = int(month)
+	if month == 12:
+		i = 11
+	else:
+		month = month % 12
+		i = month - 1
+
+	return max( [ environment[PRA][269 + i] for PRA in environment if type(environment[PRA][269 + i]) != str] )
+
+def SOLmoy_ratio_northernCountries(month, PRA):
+	"""INPUT:
+	*   month is an integer between 1 and 12
+	*   month can be 'an' ('year' in French) for a yearly value
+
+	This function calculates a sunshine ratio according to the monthly maximum sunshine in FRANCE for a given month.
+	As South of France is wellknown for its sunny climate, it can be taken as a reference for other temperate climates.
+
+	The output of this function is used in the assessment of citrus, melons and other exotics trees
+	and thus avoid some aberrations (melons and citrus in the northern, couldy regions !)."""
+
+	month = int(month)
+	if month == 12:
+		i = 11
+	else:
+		month = month % 12
+		i = month - 1
+
+	local_sunshine = environment[PRA][269 + i]
+
+	maximum_sunshine_FR = [149.65, 173.8, 238.7, 245.8, 292.9, 333.4, 375.5, 332.7, 259.3, 195.9, 152.5, 136.65]
+
+	return round( local_sunshine / maximum_sunshine_FR[month - 1], 4)
+
 
 def ETPmoy(month, PRA):
 	"""ETPmoy = "Evapotranspiration (potentielle) moyenne mensuelle"
