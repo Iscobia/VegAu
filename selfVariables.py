@@ -34,6 +34,7 @@ class x:
 	PreviouslySelectedCrop = None
 
 	LimitingFactorReached = False
+	no_delay_because_of_T_or_water = True
 
 	decomposition_month = {}
 	ActualStand = {}

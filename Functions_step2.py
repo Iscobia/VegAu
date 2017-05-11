@@ -441,13 +441,13 @@ def ASSESS_SeedingDate(PRA, x):
 	# If there are no x.edible crops for which the earliest planting date do not match with no one of the earliest
 	# and latest end of the previous crop's GS, the 'edibleCrops' list is empty. -> every crop have been deleted.
 	
-	if x.edibleCrops == [] or len(x.edibleCrops) < 4:
+	if x.edibleCrops == [] or len(x.edibleCrops) < 3:
 		if x.edibleCrops == [] :
 			print("""			No seeding date of any edible crop matches exactly with the end of the previous crop:
 				Looking for the shortest delay among seeding dates of the PRA's edible crops...""")
-		elif len(x.edibleCrops) < 4:
+		else:
 			print("""			Only {} crops could be planted without a delay ({}).
-							Looking for the shortest delay among seeding dates of other PRA's edible crops...""".format(len(x.edibleCrops), x.edibleCrops))
+				Looking for the shortest delay among seeding dates of other PRA's edible crops...""".format(len(x.edibleCrops), x.edibleCrops))
 
 		# restoring the 'edibleCrops' list
 		x.laterCrops	=	list(sorted(x.edibleCropsID[PRA]))
@@ -459,22 +459,28 @@ def ASSESS_SeedingDate(PRA, x):
 				SelectEarlierPlanting[crop] =  x.EndPreviousCrop_earlier + ((seed_from(crop) + 12) - laterPlantingMonth)
 			else:
 				SelectEarlierPlanting[crop] = x.EndPreviousCrop_earlier +  ( seed_from(crop) - laterPlantingMonth )
-		# selecting the earliest planting date among the crops from the 'SelectEarlierPlanting' dictionary:
+
+		# selecting the both earliest planting dates among the crops from the 'SelectEarlierPlanting' dictionary:
 		PlantingDate_1 = sorted(list(set(SelectEarlierPlanting.values())))[0]
 		PlantingDate_2 = sorted(list(set(SelectEarlierPlanting.values())))[1]
 
-		x.laterCrops = []
+		delay1 = [c for c in x.laterCrops if SelectEarlierPlanting[c] == PlantingDate_1 and c not in x.edibleCrops]
+		delay2 = [c for c in x.laterCrops if SelectEarlierPlanting[c] == PlantingDate_2 and c not in x.edibleCrops]
+
+		x.laterCrops = [] # this dict will be used in SELECT_CashCrop --> priority to crops that are not in this dict (no delay).
 
 		for crop in SelectEarlierPlanting.keys():
 		# adding ID of the crops for which the earliest planting date are the earliest ones among the other PRA's x.edible crops:
-			if SelectEarlierPlanting[crop] == PlantingDate_1:
+			if len(delay1) + len(x.edibleCrops) > 5:
 				x.laterCrops.append( (crop, PlantingDate_1) )
 				x.GSstart[crop] = PlantingDate_1
 				if PlantingDate_1 > x.EndPreviousCrop_later:
 					x.DelayIndex[crop] = 1 - ((PlantingDate_1 - x.EndPreviousCrop_later) / 12)
 				else :
 					x.DelayIndex[crop] = 1 - ((PlantingDate_1 + 12 - x.EndPreviousCrop_later) / 12)
-			elif SelectEarlierPlanting[crop] == PlantingDate_2:
+
+			# if there are less than 5 crops in x.edibleCrops + delay1, we add delay2
+			if len(delay1) + len(x.edibleCrops) < 5:
 				x.laterCrops.append((crop, PlantingDate_2))
 				x.GSstart[crop] = PlantingDate_2
 				if PlantingDate_1 > x.EndPreviousCrop_later:
@@ -482,11 +488,15 @@ def ASSESS_SeedingDate(PRA, x):
 				else :
 					x.DelayIndex[crop] = 1 - ((PlantingDate_2 + 12 - x.EndPreviousCrop_later) / 12)
 
+		# if there was no edible crop for this season, we add delayed crops
 		if x.edibleCrops == []:
 			x.rotat[PRA].append( ('Plantation delay', None, PlantingDate_1) )
 			x.edibleCrops = [c for (c, delay) in x.laterCrops]
+
+		# if there was just 1 or 2 crop in x.edibleCrops, we add delayed crops to x.edibleCrops
 		else :
-			for crop in [c for (c, delay) in x.laterCrops]:
+			for crop in [c for (c, delay) in x.laterCrops if c not in x.edibleCrops]:
+				# 'not in x.edibleCrops' avoids duplicates which create errors in the ASSESS_Nutrient function.
 				x.edibleCrops.append(crop)
 
 		print("""			Next later crops are : {}""", [c for (c, delay) in x.laterCrops])
@@ -531,6 +541,9 @@ def ASSESS_WaterResources(PRA, x):
 			if TminMOY(month, PRA) < Tmin(crop):
 				x.edibleCrops =  [x for x in x.edibleCrops if x != crop]
 			month += 1
+	if x.edibleCrops == []:
+		x.rotat[PRA].append(('Cold season', None, x.EndPreviousCrop_earlier))
+		raise ValueError("The rotation must be delayed: Temperature does not match with the edible PRAs.")
 
 	print("[{}][{}]	The PRA's Tmin matches the crop's one for following crops : {}".format(PRA, x.EndPreviousCrop_later, x.edibleCrops))
 
@@ -573,9 +586,9 @@ def ASSESS_WaterResources(PRA, x):
 
 	print("[{}][{}]	Water Resources verified. Following crops remain : {}.".format(PRA, x.EndPreviousCrop_later, x.edibleCrops))
 
-	if x.edibleCropsWR.keys() == []:
+	if x.edibleCrops == []:
 		# resetting the x.edibleCrops list and looking for later crops:
-		x.edibleCrops = list(x.edibleCropsID)
+		x.edibleCrops = list(x.edibleCropsID[PRA])
 		if 10 <= x.EndPreviousCrop_later <= 12:
 			later_crops = [(seed_from(crop) + 12) - x.EndPreviousCrop_later for crop in x.edibleCrops]
 		else:
@@ -585,6 +598,8 @@ def ASSESS_WaterResources(PRA, x):
 		x.EndPreviousCrop_later = int( x.EndPreviousCrop_earlier + 2)
 		# there is a hole in the rotation:
 		x.rotat[PRA].append( ('Dry season', None, x.EndPreviousCrop_earlier) )
+		x.no_delay_because_of_T_or_water == False
+		raise ValueError("The rotation must be delayed: the season is too dry.")
 
 	else:
 		# calculating x.WRmargin_moy:
@@ -637,24 +652,19 @@ def VERIF_lastCrops_not_CC(x, PRA, nutrient):
 	# the 3 last crops are already cover crops, the limiting factor has been reached :
 
 	if len(x.rotat[PRA]) > 5:
-		last_crops = [c for (c, companion, date) in x.rotat[PRA] if (c != 'start' and c != 'Limiting factor' and c != 'Dry season' and c != 'Plantation delay')]
+		last_crops = [c for (c, companion, date) in x.rotat[PRA] if (c != 'start' and c != 'Limiting factor' and c != 'Dry season' and c != 'Plantation delay' and 'season' not in c)]
 
 		if len(last_crops) >= 4:
-			last_crops = [last_crops[-4], last_crops[-3], last_crops[-2], last_crops[-1]]
+			last_crops = [last_crops[-1 * len(last_crops)], last_crops[-1 * (len(last_crops) - 1)], last_crops[- 1 * len(last_crops-2)], last_crops[-1 * len(last_crops) - 3]]
 			last_crops_are_CC = (((prodCAT(last_crops[0]) + prodCAT(last_crops[1]) + prodCAT(
-				last_crops[2]) + prodCAT(last_crops[3])) / 4)) == 0
+				last_crops[2]) + prodCAT(last_crops[3])) / len(last_crops))) == 0
 
-		elif len(last_crops) >= 3:
-			last_crops = [last_crops[-3], last_crops[-2], last_crops[-1]]
-			last_crops_are_CC = (((prodCAT(last_crops[0]) + prodCAT(last_crops[1]) + prodCAT(
-				last_crops[2])) / 4)) == 0
+			if last_crops_are_CC:
+				x.rotat[PRA].append(('Limiting factor', nutrient, x.edibleCrops))
+				x.LimitingFactorReached = True
 
 		elif len(last_crops) >= 2 :
 			pass
-
-		if last_crops_are_CC:
-			x.rotat[PRA].append(('Limiting factor', nutrient, x.edibleCrops))
-			x.LimitingFactorReached = True
 
 
 #================================================================================================================
@@ -719,7 +729,7 @@ def ASSESS_NutrientsMargin(PRA, x):
 				# ---------------------------------------------------------------------------------------------------------
 
 				if margin_is_negative :
-					print("Not enough {} to grow {}. [DELETED FROM x.edibleCrops]".format(nutrient, prod_EN(crop)))
+					print("			/!\ Not enough {} to grow {}. [DELETED FROM x.edibleCrops]".format(nutrient, prod_EN(crop)))
 					del x.NutrientsMargin[crop]
 					x.edibleCrops = [x for x in x.edibleCrops if x!= crop]
 
@@ -790,7 +800,7 @@ def ASSESS_Nutrients(x, PRA):
 
 	MAXvalue = {}
 
-	for crop in x.edibleCrops:
+	for crop in x.NutrientsMargin:
 		MAXvalue = {'N': [], 'P': [], 'K': [], 'Na': [],'Mg': [], 'Ca': [], 'Mn': [], 'Fe': [], 'Cu': []}
 		#----------------------------------------------------------------------------------------------
 		for nutrient in MAXvalue.keys():
@@ -802,7 +812,7 @@ def ASSESS_Nutrients(x, PRA):
 
 
 	# Margin standardization, second step (dividing by the MAXvalue to get a percentage):
-	for crop in x.edibleCrops:
+	for crop in x.NutrientsMargin:
 		#----------------------------------------------------------------------------------------------
 		try :
 			for nutrient in x.NutrientsMargin[crop].keys():
@@ -911,7 +921,7 @@ def SELECT_CashCrop(x, PRA, data):
 	# Selecting the best(s) crop for following the preceding one:
 
 	else:
-		rotation = [c for (c, companion, date) in x.rotat[PRA] if (c != 'start' and c != 'Limiting factor' and 'delay' not in c)]
+		rotation = [c for (c, companion, date) in x.rotat[PRA] if (c != 'start' and c != 'Limiting factor' and 'delay' not in c and 'season' not in c)]
 		# Note : 'delay' not in c allows to add further informations about de delay in rotat.
 		no_delay    = [c for (c, delay) in x.laterCrops]
 		unusedCrops = [c for c in edibleCashCrops if c not in rotation]

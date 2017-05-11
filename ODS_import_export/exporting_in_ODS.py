@@ -162,7 +162,7 @@ PRAedibility[ textile,	1].value	= 'PRIORITYtextile'
 
 print("Exporting rotations in PRArotat... ")
 
-for PRA in rotat.keys():
+for PRA in x.rotat.keys():
 	col = 2
 	PRArow = PRArow_PRAvirgin(PRA)
 	
@@ -255,7 +255,7 @@ def MonthID():
 
 print("Exporting rotations in PRArotat... ")
 
-for PRA in rotat.keys():
+for PRA in x.rotat.keys():
 	PRArow = PRArow_PRAvirgin(PRA)
 	
 	#-------------------------------------------------------------------------------------------------------------
