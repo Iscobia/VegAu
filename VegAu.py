@@ -26,7 +26,7 @@ import traceback    # Used for AssetionErrors to get the line and file here the 
 #										#
 #########################################
 
-from selfVariables import x
+from selfVariables import *
  
 # if I define the x values here, I risk a circular import error because:
 # in VegAu: 				from Functions_step3 import *
@@ -315,24 +315,32 @@ def ASSESS_PRArotation(x, data):
 
 		#=========================================================================
 
-
-		try :
-			the_selected_crop_is_a_permanent_crop = prodCAT(x.PreviouslySelectedCrop) == 1 # fruit/nut tree, shrub
-		except KeyError: # if there is no "Previously Selected Crop", VegAu has to proceed with the rotation simulation
 			the_selected_crop_is_a_permanent_crop = False
 		x.edibleCompanionCrops	= []
 
 		# =========================================================================
 		# =========================================================================
 
+
 		# while there is enough nutrients in the soil :
-		while x.LimitingFactorReached == False or x.EndPreviousCrop_later >= 120 : # Simulation stops automatically after 10 years
+		while x.LimitingFactorReached == False or x.EndPreviousCrop_later <= 120 : # Simulation stops automatically after 10 years
+
 			try:
-				while x.no_delay_because_of_T_or_water :
+				if x.LimitingFactorReached == True:
+					raise NoNutrients("Breaking the rotation --> Next PRA")
+				x.no_delay_because_of_T_or_water = True
+
+				while x.no_delay_because_of_T_or_water == True :
 
 					try:    # ---> assert x.LimitingFactorReached == False after the function ASSESS_Nutrients.
 							# ---> assert x.EndPreviousCrop_Later >= 120 after the UPDATE function
 							# The while loop seemed not to be enough...
+
+						if x.PreviouslySelectedCrop != None :
+							the_selected_crop_is_a_permanent_crop = prodCAT(x.PreviouslySelectedCrop) == 1  # fruit/nut tree, shrub
+						else:
+							pass
+						# except KeyError:  # if there is no "Previously Selected Crop", VegAu has to proceed with the rotation simulation
 
 						# =======================================================================================================
 						# =======================================================================================================
@@ -404,74 +412,99 @@ def ASSESS_PRArotation(x, data):
 							#			*	keys = CROProw
 							#			*	values = standardized "WaterResources evaluation" (WReval)
 
+							if x.no_delay_because_of_T_or_water == True:
 
-							print("""
-[{}][{}]	Checking the nutrient requirements for remaining crops...""". format(PRA, x.EndPreviousCrop_later))
+								print("""
+	[{}][{}]	Checking the nutrient requirements for remaining crops...""". format(PRA, x.EndPreviousCrop_later))
 
-							ASSESS_Nutrients(x, PRA)
-							# after this function, we get:
-							#	* an updated "x.edibleCrops' list
-							#	* a x.NutrientsMargin dictionary with:
-							#			*	keys = CROProw
-							#			*	values = standardized nutrients margin
+								ASSESS_Nutrients(x, PRA)
+								# after this function, we get:
+								#	* an updated "x.edibleCrops' list
+								#	* a x.NutrientsMargin dictionary with:
+								#			*	keys = CROProw
+								#			*	values = standardized nutrients margin
 
-							# VERIF_lastCrops_not_CC(x, PRA)
+								# VERIF_lastCrops_not_CC(x, PRA)
 
-							assert x.LimitingFactorReached == False
+								if x.LimitingFactorReached == False:
 
+									# -> All these intermediary functions helps to compare the remaining crops thanks an homogenized Index and the priority Indexes
 
-							# -> All these intermediary functions helps to compare the remaining crops thanks an homogenized Index and the priority Indexes
+									print("			Checking the pests and diseases risks for remaining crops... (edible crops are : {})". format(x.edibleCrops))
 
-							print("			Checking the pests and diseases risks for remaining crops... (edible crops are : {})". format(x.edibleCrops))
+									ASSESS_PestDiseases(x, PRA)
+									# returns an updated ediblePnD dictionary with, for each crop, an index according to the risks of pests and diseases
+									# relative to a too short period between several crops of a same botanic family
 
-							ASSESS_PestDiseases(x, PRA)
-							# returns an updated ediblePnD dictionary with, for each crop, an index according to the risks of pests and diseases
-							# relative to a too short period between several crops of a same botanic family
+									print("			Selecting the best crop for the {}th month of the Rotation ({})...".format(x.EndPreviousCrop_earlier, MonthID(x.EndPreviousCrop_earlier)))
 
-							print("			Selecting the best crop for the {}th month of the Rotation ({})...".format(x.EndPreviousCrop_earlier, MonthID(x.EndPreviousCrop_earlier)))
-
-							SELECT_CashCrop(x, PRA, data)
-							# This function selects the best crop according to the previously calculated indexes and the Priority indexes.
-
-
-							UPDATE_EndPreviousCrop_rotat(PRA, x)
-							assert x.EndPreviousCrop_later <= 120
+									SELECT_CashCrop(x, PRA, data)
+									# This function selects the best crop according to the previously calculated indexes and the Priority indexes.
 
 
-							print("[{}][{}]	It will mature until the {}th (earlier : {}) or the {}th (later : {}) month of the rotation.".
-								  format(PRA, x.EndPreviousCrop_later, int(x.EndPreviousCrop_earlier), MonthID(x.EndPreviousCrop_earlier), x.EndPreviousCrop_later, MonthID(x.EndPreviousCrop_later) ))
-
-							# assessing if there is possible to mix the x.SelectedCrop with a CompanionCrop
-							SELECT_CompanionCrop(x, PRA)
+									UPDATE_EndPreviousCrop_rotat(PRA, x)
 
 
-							#------------------------------------------------------------------------
+									print("[{}][{}]	It will mature until the {}th (earlier : {}) or the {}th (later : {}) month of the rotation.".
+										  format(PRA, x.EndPreviousCrop_later, int(x.EndPreviousCrop_earlier), MonthID(x.EndPreviousCrop_earlier), x.EndPreviousCrop_later, MonthID(x.EndPreviousCrop_later) ))
 
-							APPLY_ResiduesDecomposition_of_PreviousCrops(PRA, x)
-
-							APPLY_SelectedCC_Kill(PRA, x) # the selected Companion Crop is cut at the same time as the Selected Cash Crop is harvested
-							APPLY_SelectedCrop_Harvest(PRA, x)	# updates 'ActualStand'
-													# /!\ CAUTION: if there is a x.SelectedCC, SelectedCC_Kill(PRA, x) modifies 'ActualStand' !
-													#		----> SelectedCC_Kill(PRA, x) must run BEFORE SelectedCrop_Harvest(PRA, x) !!
+									# assessing if there is possible to mix the x.SelectedCrop with a CompanionCrop
+									SELECT_CompanionCrop(x, PRA)
 
 
-							UPDATE_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x)
-							# This function creates an entry in x.VERIFprodBOT for the newly selected crop if there is no one in the dictionary
-							# and verifies if the minimum return period is respected.
-							# 		* If respected : no Pest and Diseases malus
-							# 		* If not respected : +1 for this crop in the dict 'PestsDiseases_in_rotation'.
-							# In both cases, the 'Duration since previous crop' returns to 0 (because it is yet the 'previous crop' for the potential next ones).()
+									#------------------------------------------------------------------------
+
+									APPLY_ResiduesDecomposition_of_PreviousCrops(PRA, x)
+
+									APPLY_SelectedCC_Kill(PRA, x) # the selected Companion Crop is cut at the same time as the Selected Cash Crop is harvested
+									APPLY_SelectedCrop_Harvest(PRA, x)	# updates 'ActualStand'
+															# /!\ CAUTION: if there is a x.SelectedCC, SelectedCC_Kill(PRA, x) modifies 'ActualStand' !
+															#		----> SelectedCC_Kill(PRA, x) must run BEFORE SelectedCrop_Harvest(PRA, x) !!
 
 
-							#Saving the x.SelectedCrop as "Previously Selected Crop" for the next loop:
-							x.PreviouslySelectedCrop = str(x.SelectedCrop)
+									UPDATE_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x)
+									# This function creates an entry in x.VERIFprodBOT for the newly selected crop if there is no one in the dictionary
+									# and verifies if the minimum return period is respected.
+									# 		* If respected : no Pest and Diseases malus
+									# 		* If not respected : +1 for this crop in the dict 'PestsDiseases_in_rotation'.
+									# In both cases, the 'Duration since previous crop' returns to 0 (because it is yet the 'previous crop' for the potential next ones).()
 
-						#END while (Nutrient Sufficient, no negative value in x.ActualStand)
 
-					except ValueError:
+									#Saving the x.SelectedCrop as "Previously Selected Crop" for the next loop:
+									x.PreviouslySelectedCrop = str(x.SelectedCrop)
+
+
+								else:
+									raise NoNutrients("Limiting Factor has been reached")
+
+									# END if (x.LimitingFactorReached == False)
+
+							else:
+								raise Delay("DELAY : no edible crops")
+
+							# END if (x.no_delay_because_of_T_or_water == True)
+
+ 						#END if (the_selected_crop_is_a_permanent_crop)
+
+
+					except Delay:
+						print("DELAY : no edible crops")
+						break
+					except ColdSeason:
+						print("DELAY : cold season")
+						break
+					except DrySeason:
+						print("DELAY : dry season")
+						break
+					except NoNutrients:
+						print("Not enough nutrients")
 						break
 
-			except AssertionError:
+			except TenYears:
+				print("STOP : rotaiton over ten years")
+				break
+			except NoNutrients:
+				print("Not enough nutrients")
 				break
 
 		x.rotat[PRA].append((x.PreviouslySelectedCrop, x.SelectedCC, x.EndPreviousCrop_later))

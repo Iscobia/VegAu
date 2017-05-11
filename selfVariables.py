@@ -1,6 +1,34 @@
 #!/usr/bin/python3.4
 # -*-coding:Utf-8 -*
 
+#########################################
+#										#
+#   		CUSTOM EXCEPTIONS       	#
+#										#
+#########################################
+
+class Delay(Exception):
+	pass
+
+class ColdSeason(Exception):
+	pass
+
+class DrySeason(Exception):
+	pass
+
+class NoNutrients(Exception):
+	pass
+
+class TenYears(Exception):
+	pass
+
+
+#########################################
+#										#
+#		KEY OBJECTS OF THE PROGRAMM		#
+#										#
+#########################################
+
 class x:
 	#-- from step 1:
 	all_crop_parameters_match_the_PRA_ones = True
