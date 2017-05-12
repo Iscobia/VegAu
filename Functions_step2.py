@@ -42,31 +42,31 @@ def MonthID(month):
 	of the rotation.
 	"""
 
-	year = str( (month//12)+1 )
+	year = int(month//12 + 1)
 	if month % 12 == 0:
-		return "dec"+str(int(year)-1)
+		return "dec" + str(year - 1)
 	elif month % 12 == 1:
-		return "jan"+year
+		return "jan"+ str(year)
 	elif month % 12 == 2:
-		return "fev"+year
+		return "fev"+ str(year)
 	elif month % 12 == 3:
-		return "mar"+year
+		return "mar"+ str(year)
 	elif month % 12 == 4:
-		return "avr"+year
+		return "avr"+ str(year)
 	elif month % 12 == 5:
-		return "mai"+year
+		return "mai"+ str(year)
 	elif month % 12 == 6:
-		return "jun"+year
+		return "jun"+ str(year)
 	elif month % 12 == 7:
-		return "jul"+year
+		return "jul"+ str(year)
 	elif month % 12 == 8:
-		return "aout"+year
+		return "aout"+ str(year)
 	elif month % 12 == 9:
-		return "sep"+year
+		return "sep"+ str(year)
 	elif month % 12 == 10:
-		return "oct"+year
+		return "oct"+ str(year)
 	elif month % 12 == 11:
-		return "nov"+year
+		return "nov"+ str(year)
 
 #================================================================================================================
 
@@ -544,6 +544,11 @@ def ASSESS_WaterResources(PRA, x):
 
 	if x.edibleCrops == []:
 		x.rotat[PRA].append(('Cold season', None, x.EndPreviousCrop_earlier))
+		# updating the earlier and later dates for the begin of a new growing season with a later crop :
+		later_dates = [abs(seed_from(c) - x.EndPreviousCrop_later % 12) for c in x.edibleCropsID[PRA] if abs(seed_from(c) - x.EndPreviousCrop_later % 12) != 0]
+		delay = sorted(list(set(later_dates)))[0]
+		x.EndPreviousCrop_earlier = int(x.EndPreviousCrop_later + delay)
+		x.EndPreviousCrop_later = int(x.EndPreviousCrop_earlier + 2)
 		x.no_delay_because_of_T_or_water = False
 		# raise ColdSeason("The rotation must be delayed: Temperature does not match with the edible PRAs.")
 	else:
@@ -591,12 +596,7 @@ def ASSESS_WaterResources(PRA, x):
 
 		if x.edibleCrops == []:
 			# resetting the x.edibleCrops list and looking for later crops:
-			x.edibleCrops = list(x.edibleCropsID[PRA])
-			if 10 <= x.EndPreviousCrop_later <= 12:
-				later_dates = [(seed_from(c) + 12) - x.EndPreviousCrop_later for c in x.edibleCrops]
-
-			else:
-				later_dates = [seed_from(c) - x.EndPreviousCrop_later for c in x.edibleCrops if (seed_from(c) - x.EndPreviousCrop_later) >= 0]
+			later_dates = [abs(seed_from(c) - x.EndPreviousCrop_later%12) for c in x.edibleCropsID[PRA]]
 
 			if sorted(list(set(later_dates)))[0] != 0:
 				delay = sorted(list(set(later_dates)))[0]
@@ -660,21 +660,33 @@ def VERIF_lastCrops_not_CC(x, PRA, nutrient):
 	# If there is already 4 crops in the rotation, if all edible cash crops are removed and
 	# the 3 last crops are already cover crops, the limiting factor has been reached :
 
+	if nutrient == None:
+		nutrient = 'Last 4 crops are Cover Crops'
+
 	if len(x.rotat[PRA]) > 5:
 		last_crops = [c for (c, companion, date) in x.rotat[PRA] if (c != 'start' and c != 'Limiting factor' and c != 'Dry season' and c != 'Plantation delay' and 'season' not in c)]
 
 		if len(last_crops) >= 4:
-			i = int(len(last_crops)) * -1
-			last_crops = [ last_crops[i], last_crops[i + 1], last_crops[i + 2], last_crops[i + 3] ]
+			i = int(len(last_crops))
+
+			# Selecting the last 4 crops of the rotation :
+			last_crops = [ last_crops[i - 4], last_crops[i - 3], last_crops[i - 2], last_crops[i-1] ]
+
+			# if they are all Cover Crops, their "production Category" will be 0, so their average will also be 0:
 			last_crops_are_CC = (((prodCAT(last_crops[0]) + prodCAT(last_crops[1]) + prodCAT(
 				last_crops[2]) + prodCAT(last_crops[3])) / 4)) == 0
 
 			if last_crops_are_CC:
-				x.rotat[PRA].append(('Limiting factor', nutrient, x.edibleCrops))
-				x.LimitingFactorReached = True
+				# if the only crops in the x.edibleCrops list are CoverCrops, rotation is broken.
+				if [c for c in x.edibleCrops if prodCAT(c) != 0] != [] :
+					x.rotat[PRA].append(('Limiting factor', nutrient, x.edibleCrops))
+					x.LimitingFactorReached = True
+				# if the only crops in the x.edibleCrops list are CoverCrops, rotation is broken too.
+				# (we assume that only other cover crops will follow)
+				else:
+					x.rotat[PRA].append(('Limiting factor', 'Last 4 crops are Cover Crops', x.edibleCrops))
+					x.LimitingFactorReached = True
 
-		elif len(last_crops) >= 2 :
-			pass
 
 
 #================================================================================================================
@@ -1025,6 +1037,8 @@ def SELECT_CashCrop(x, PRA, data):
 
 						x.SelectedCrop = min(FinalSelection)
 
+
+
 	print("			The selected crop is : {} ({}).".format(prod_EN(x.SelectedCrop), prodID(x.SelectedCrop)))
 
 
@@ -1044,12 +1058,18 @@ def SELECT_CashCrop(x, PRA, data):
 		x.totalYields[x.SelectedCrop] += round(x.YIELD, 3)  # rounding with 3 decimals to lighten the dict
 	else:
 		x.totalYields[x.SelectedCrop] = round(x.YIELD, 3)
+	#----------------------------------------------------------------------------------------------------------
 
+	if x.SelectedCrop in x.totalYields_year:
+		x.totalYields_year[PRA][x.SelectedCrop] += round(x.YIELD, 3) # rounding with 3 decimals to lighten the dict
+	else:
+		x.totalYields_year[PRA][x.SelectedCrop] = round(x.YIELD, 3)
 	# Notice: Yields are in tons, not in t/ha anymore ! -> preparation for the assessment of the nutritional requirements
 
+	# ----------------------------------------------------------------------------------------------------------
 	# for the next loop, the crop search occurs from the earlier to the later end of the SelectedCrop's GS:
-	x.EndPreviousCrop_earlier = int(x.GSstart + GSmin(x.SelectedCrop))
-	x.EndPreviousCrop_later = int(x.GSstart + GSmax(x.SelectedCrop))
+	x.EndPreviousCrop_earlier   = int(x.GSstart + GSmin(x.SelectedCrop))
+	x.EndPreviousCrop_later     = int(x.GSstart + GSmax(x.SelectedCrop))
 
 
 	# =======================================================================================================

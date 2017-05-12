@@ -20,6 +20,8 @@ from CanadaHealth import Canada_Health	# dictionary containing the Dietary Refer
 
 from importedVariables import *	# lambda functions to access easier to the data from the abode imported dicts
 
+from inputFR import nutrition
+
 #########################################
 #										#
 #			PRIMARY FUNCTIONS			#

@@ -53,13 +53,13 @@ print("Importing modules...")
 
 from inputFR import environment	# dictionary containing all environmental data
 from inputFR import plants		# dictionary containing all data.plants (biological) data
-from inputFR import nutrition	# dictionary containing dietical properties of each crop from 'plants'
+from inputFR import nutrition	# dictionary containing dietical properties of each crop from 'nutrition'
 
 from importedVariables import *	# lambda functions to access easier to the data from the abode imported dicts
 
 from Functions_step1 import *	# Functions for the step1
 from Functions_step2 import *	# Functions for the step2
-#~ from Functions_step3 import *	# Functions for the step3
+from Functions_step3 import *	# Functions for the step3
 
 
 #########################################
@@ -133,9 +133,13 @@ def PRAedibilityTest(x, data):
 					#=======================================================================================================================================
 					# assessment functions
 					x.all_crop_parameters_match_the_PRA_ones = True
-					the_selected_crop_is_a_permanent_crop = prodCAT(crop) == 1 or prodCAT(crop) == 2 # fruit/nut tree (1), shrub (2)
+
 
 					while x.all_crop_parameters_match_the_PRA_ones :
+
+						x.all_crop_parameters_match_the_PRA_ones = True
+						the_selected_crop_is_a_permanent_crop = prodCAT(crop) == 1 or prodCAT(
+							crop) == 2  # fruit/nut tree (1), shrub (2)
 
 						try :
 
@@ -192,7 +196,7 @@ def PRAedibilityTest(x, data):
 
 					#END for (crop in database)
 
-			print( "[{}]	There are {} edible crops for this PRA : {}.".format(PRA, x.EndPreviousCrop_later, len(x.edibleCropsID[PRA]), x.edibleCropsEN[PRA]) )
+			print( "[{}]	There are {} edible crops for this PRA : {}.".format(PRA, len(x.edibleCropsID[PRA]), x.edibleCropsEN[PRA]) )
 
 			#END for (pra in country)
 
@@ -200,34 +204,60 @@ def PRAedibilityTest(x, data):
 	#== EXPORTING THE RESULTS OF THIS FIRST PART =========================================
 
 	# === Enhancing the result's layout before saving ====
-	def GoodLookingDict(dict_name):
-		result_str = str(sorted(dict_name))
-		result = '],\n'.join(result_str.split('],'))
-		result = '},\n'.join(result.split('},'))
-		return result
+	# def GoodLookingDict(dict_name):
+	# 	result_str = str(sorted(dict_name))
+	# 	result = '],\n'.join(result_str.split('],'))
+	# 	result = '},\n'.join(result.split('},'))
+	# 	return result
 
 	file_name = 'CropRepartition'
 	print("Saving the results in  {} ...".format(file_name + '.py'))
 
 	with open(file_name + '.py', 'w') as saves:
-		saves.write("CropRepartition_ID = ")
-		saves.write(GoodLookingDict(x.edibleCropsID))
-		saves.write("""
-		""")
-		saves.write("CropRepartition_EN = ")
-		saves.write(GoodLookingDict(x.edibleCropsEN))
-		saves.write("""
-		""")
-		saves.write("CropRepartition_FR = ")
-		saves.write(GoodLookingDict(x.edibleCropsFR))
-		saves.write("""
-		""")
-		saves.write("CropRepartition_DE = ")
-		saves.write(GoodLookingDict(x.edibleCropsDE))
-		saves.write("""
-		""")
-		saves.write("prodSURFACE = ")
-		saves.write(GoodLookingDict(x.prodSURFACE))
+		saves.write("""CropRepartition_ID = {
+""")
+		# saves.write(GoodLookingDict(x.edibleCropsID))
+		for entry in x.edibleCropsID:
+			saves.write("""	'{}': {},
+""".format(entry, x.edibleCropsID[entry]))
+		saves.write("""	}
+""")
+		#------------------------------------------------------------------
+		saves.write("""CropRepartition_EN = {
+""")
+		# saves.write(GoodLookingDict(x.edibleCropsEN))
+		for entry in x.edibleCropsEN:
+			saves.write("""	'{}': {},
+""".format(entry, x.edibleCropsEN[entry]))
+		saves.write("""	}
+""")
+		# ------------------------------------------------------------------
+		saves.write("""CropRepartition_FR = {
+""")
+		# saves.write(GoodLookingDict(x.edibleCropsFR))
+		for entry in x.edibleCropsFR:
+			saves.write("""	'{}': {},
+""".format(entry, x.edibleCropsFR[entry]))
+		saves.write("""	}
+""")
+		# ------------------------------------------------------------------
+		saves.write("""CropRepartition_DE = {
+""")
+		# saves.write(GoodLookingDict(x.edibleCropsDE))
+		for entry in x.edibleCropsDE:
+			saves.write("""	'{}': {},
+""".format(entry, x.edibleCropsDE[entry]))
+		saves.write("""	}
+""")
+		# ------------------------------------------------------------------
+		saves.write("""prodSURFACE = {
+""")
+		# saves.write(GoodLookingDict(x.prodSURFACE))
+		for entry in x.prodSURFACE:
+			saves.write("""	'{}': {},
+""".format(entry, x.prodSURFACE[entry]))
+		saves.write("""	}
+""")
 
 
 	#=====================================================================================
@@ -298,6 +328,7 @@ def ASSESS_PRArotation(x, data):
 
 
 		x.ActualStand[PRA] = {"N": nmin_med(PRA), "P": P_med(PRA), "K": K_med(PRA), "Na": nao_med(PRA), "Mg": mgo_med(PRA), "Ca": cao_med(PRA), "Mn": mned_med(PRA), "Fe": feed_med(PRA), "Cu": cued_med(PRA), "OM": corgox_med(PRA)}
+		x.totalYields_year[PRA] = {}
 		x.LimitingFactorReached = False
 		x.no_delay_because_of_T_or_water = True
 
@@ -315,7 +346,7 @@ def ASSESS_PRArotation(x, data):
 
 		#=========================================================================
 
-			the_selected_crop_is_a_permanent_crop = False
+		the_selected_crop_is_a_permanent_crop = False
 		x.edibleCompanionCrops	= []
 
 		# =========================================================================
@@ -326,9 +357,15 @@ def ASSESS_PRArotation(x, data):
 		while x.LimitingFactorReached == False or x.EndPreviousCrop_later <= 120 : # Simulation stops automatically after 10 years
 
 			try:
+				#=======================================================================================================
+
 				if x.LimitingFactorReached == True:
+
 					raise NoNutrients("Breaking the rotation --> Next PRA")
+
 				x.no_delay_because_of_T_or_water = True
+
+				# =======================================================================================================
 
 				while x.no_delay_because_of_T_or_water == True :
 
@@ -362,27 +399,31 @@ def ASSESS_PRArotation(x, data):
 							print("[{}][{}]	Simulating the Nutrients gain and removal...".format(PRA, x.EndPreviousCrop_later))
 							ASSESS_Nutrients(x, PRA)
 
-							SelectedCrop_Harvest(PRA, x)
+							if x.LimitingFactorReached == False:
 
-							x.totalYields[x.SelectedCrop] += expYIELD(x.SelectedCrop) * x.WRmargin_moy[x.SelectedCrop]
+								APPLY_SelectedCrop_Harvest(PRA, x)
 
-							# =======================================================================================================
-							# yet, we can update VERIFYprodBOT, x.GSstart and the cells from PRArotat by adding the prodID of the previously selected crop
-							# from the seed_from(x.PreviouslySelectedCrop) to the seed_from(x.SelectedCrop) non inclusive:
+								x.totalYields[x.SelectedCrop] += expYIELD(x.SelectedCrop) * x.WRmargin_moy[x.SelectedCrop]
 
-							print("[{}][{}]	Updating x.GSstart and x.VERIFprodBOT...".format(PRA, x.EndPreviousCrop_later))
+								# =======================================================================================================
+								# yet, we can update VERIFYprodBOT, x.GSstart and the cells from PRArotat by adding the prodID of the previously selected crop
+								# from the seed_from(x.PreviouslySelectedCrop) to the seed_from(x.SelectedCrop) non inclusive:
 
-							# the SelectedCrop just never changes (tree --> permanent) : the next start
-							# of its growing season will be one year later
-							x.GSstart += 12
+								print("[{}][{}]	Updating x.GSstart and x.VERIFprodBOT...".format(PRA, x.EndPreviousCrop_later))
 
-							UPDATE_EndPreviousCrop_rotat(PRA,x)
-							# now, x.GSstart corresponds to the duration from the beginning of the rotation up to x.GSstart[x.SelectedCrop]
+								# the SelectedCrop just never changes (tree --> permanent) : the next start
+								# of its growing season will be one year later
+								x.GSstart += 12
 
-							print("[{}][{}]	GSstart = {}".format(PRA, x.EndPreviousCrop_later,x.GSstart))
-							print("[{}][{}]	Updating x.VERIFprodBOT and x.PestsDiseases_in_rotation...".format(PRA, x.EndPreviousCrop_later))
-							UPDATE_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x)
+								UPDATE_EndPreviousCrop_rotat(PRA,x)
+								# now, x.GSstart corresponds to the duration from the beginning of the rotation up to x.GSstart[x.SelectedCrop]
 
+								print("[{}][{}]	GSstart = {}".format(PRA, x.EndPreviousCrop_later,x.GSstart))
+								print("[{}][{}]	Updating x.VERIFprodBOT and x.PestsDiseases_in_rotation...".format(PRA, x.EndPreviousCrop_later))
+								UPDATE_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x)
+
+							else:
+								raise NoNutrients
 
 						# =======================================================================================================
 						# =======================================================================================================
@@ -424,8 +465,6 @@ def ASSESS_PRArotation(x, data):
 								#			*	keys = CROProw
 								#			*	values = standardized nutrients margin
 
-								# VERIF_lastCrops_not_CC(x, PRA)
-
 								if x.LimitingFactorReached == False:
 
 									# -> All these intermediary functions helps to compare the remaining crops thanks an homogenized Index and the priority Indexes
@@ -437,6 +476,11 @@ def ASSESS_PRArotation(x, data):
 									# relative to a too short period between several crops of a same botanic family
 
 									print("			Selecting the best crop for the {}th month of the Rotation ({})...".format(x.EndPreviousCrop_earlier, MonthID(x.EndPreviousCrop_earlier)))
+									#
+									# VERIF_lastCrops_not_CC(x, PRA, None)
+									# if x.LimitingFactorReached == False:
+									# 	raise
+
 
 									SELECT_CashCrop(x, PRA, data)
 									# This function selects the best crop according to the previously calculated indexes and the Priority indexes.
@@ -480,12 +524,23 @@ def ASSESS_PRArotation(x, data):
 									# END if (x.LimitingFactorReached == False)
 
 							else:
+								# # updating the earlier and later dates for the begin of a new growing season with a later crop :
+								# later_dates = [abs(seed_from(c) - x.EndPreviousCrop_later % 12) for c in
+								#                x.edibleCropsID[PRA] if
+								#                abs(seed_from(c) - x.EndPreviousCrop_later % 12) != 0]
+								# delay = sorted(list(set(later_dates)))[0]
+								#
+								# x.EndPreviousCrop_earlier = x.EndPreviousCrop_later + delay
+								# x.EndPreviousCrop_later = x.EndPreviousCrop_earlier + 2
+
 								raise Delay("DELAY : no edible crops")
 
 							# END if (x.no_delay_because_of_T_or_water == True)
 
  						#END if (the_selected_crop_is_a_permanent_crop)
 
+						if x.EndPreviousCrop_later > 120:
+							raise TenYears
 
 					except Delay:
 						print("DELAY : no edible crops")
@@ -500,47 +555,65 @@ def ASSESS_PRArotation(x, data):
 						print("Not enough nutrients")
 						break
 
+			except LastCropsCC:
+				print("STOP : last crops are only cover crops")
+				break
 			except TenYears:
-				print("STOP : rotaiton over ten years")
+				print("STOP : rotation over ten years")
 				break
 			except NoNutrients:
 				print("Not enough nutrients")
 				break
 
-		x.rotat[PRA].append((x.PreviouslySelectedCrop, x.SelectedCC, x.EndPreviousCrop_later))
+			if x.PreviouslySelectedCrop != None :
+				x.rotat[PRA].append((x.PreviouslySelectedCrop, x.SelectedCC, x.EndPreviousCrop_later))
 
 
-		# The following variable exists only to inform the user in the last print.
-		rotation_crops = [crop for (crop, companion, last_month) in x.rotat[PRA] if (crop != 'start' and crop != 'Limiting factor' and 'delay' not in crop and 'season' not in crop)]
+			# The following variable exists only to inform the user in the last print.
+			rotation_crops = [crop for (crop, companion, last_month) in x.rotat[PRA] if (crop != 'start' and crop != 'Limiting factor' and 'delay' not in crop and 'season' not in crop)]
 
-		if x.LimitingFactorReached == True :
-			print("""
-[{}][{}]	END OF THE ROTATION : Nutrients are not sufficient (Limiting factor is {}).
+			if x.LimitingFactorReached == True :
+				print("""
+	[{}][{}]	END OF THE ROTATION : Nutrients are not sufficient (Limiting factor is {}).
 
-{} different crops out of {} succeeded until {}: {}
+	{} different crops out of {} succeeded until {}: {}
 
-			""".format( PRA, x.EndPreviousCrop_later, x.rotat[PRA][-1][1], len(list(set(rotation_crops))), len(rotation_crops), MonthID(x.EndPreviousCrop_later), rotation_crops ))
+				""".format( PRA, x.EndPreviousCrop_later, x.rotat[PRA][-1][1], len(list(set(rotation_crops))), len(rotation_crops), MonthID(x.EndPreviousCrop_later), rotation_crops ))
 
-		else:
-			print("""
-[{}][{}]	END OF THE ROTATION : The rotation reached 10 years --> switching to next PRA
+			else:
+				print("""
+	[{}][{}]	END OF THE ROTATION : The rotation reached 10 years --> switching to next PRA
 
-{} different crops out of {} succeeded until {}: {}
-							""".format(PRA, x.EndPreviousCrop_later, len(list(set(rotation_crops))) ,len(rotation_crops), MonthID(x.EndPreviousCrop_later),
-			                           rotation_crops))
+	{} different crops out of {} succeeded until {}: {}
+								""".format(PRA, x.EndPreviousCrop_later, len(list(set(rotation_crops))) ,len(rotation_crops), MonthID(x.EndPreviousCrop_later),
+				                           rotation_crops))
 
-		x.rotation_length[PRA] = (x.EndPreviousCrop_later - 2)  # because it started in March
+			x.rotation_length[PRA] = (x.EndPreviousCrop_later - 2)  # because it started in March
 
 
-		average_rotation_duration = round(sum(x.rotation_length.values()) / len(x.rotation_length), 1)
-		print("""At {}% of the database, the average rotation duration is of {} months ({} years)
+			average_rotation_duration = round(sum(x.rotation_length.values()) / len(x.rotation_length), 1)
+			print("""At {}% of the database, the average rotation duration is of {} months ({} years)
 
-		=============================================================================
-		      """.format(round(PRAcursor/len(country)*100, 2), average_rotation_duration, round(average_rotation_duration/12, 1) ) )
+			=============================================================================
+			      """.format(round((PRAcursor/( len(country) -2) ) *100, 2), average_rotation_duration, round(average_rotation_duration/12, 1) ) )
+
+			for crop in x.totalYields_year[PRA] :
+				if x.rotation_length[PRA] <= 1 :
+					x.totalYields_year[PRA][crop] = 0
+				else :
+					x.totalYields_year[PRA][crop] = round(x.totalYields_year[PRA][crop]/x.rotation_length[PRA], 3)
+
+			permanent_crops = [c for c in rotation_crops if prodCAT(c) == 0]
+
+			# Calculation of Limiting factors :
+			x.LimitingFactor[PRA] = [i for i in x.rotat[PRA] if x.rotat[PRA][0] == 'Limiting factor']
+			x.LimitingFactor[PRA] = list(set( [j for (i, j, k) in x.rotat[PRA]] ))
+
+			x.results[PRA] = [x.rotation_length[PRA], len(list(set(rotation_crops))) ,len(rotation_crops), list(set(rotation_crops)), rotation_crops, len(permanent_crops), permanent_crops, x.LimitingFactor[PRA]]
 
 		# END for (pra in country)
 
-		
+	print("END STEP 2")
 
 	
 
@@ -575,6 +648,12 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 	### creating the sheets for the rotation calculation and importing the automatic columns creation + associated functions:
 	
 	ASSESS_PRArotation(x, data)
+	with open('firsDemain je le refert_results.py', 'w') as saves:
+		saves.write("""results = {
+""")
+		for entry in x.results:
+			saves.write("""	{}
+			""".format(x.results[entry]))
 
 
 	#==================================================================================================================================
@@ -585,11 +664,11 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 		Calculating the average daily nutritional value per person for the total yield...""")
 
 
-	ASSESS_FoodNutrients( x )
+	ASSESS_FoodNutrients( x, nutrition )
 	# --> It sums the nutrients and vitamins of all products in the appropriate variables (1 variable per nutritional feature)
 	# of the dictionary 'TotalNutrients' (each key corresponds to a nutrient, vitamin or other dietetic feature)
 
-	ASSESS_QTTperPERSON( x )
+	ASSESS_QTTperPERSON( x, nutrition )
 	# This function updates the 'TotalNutrients' dictionary by dividing each nutrient amount by the total population
 	# and copies the results in the sheet 'NUTRIassess' for each crop in order to keep a friendly interface to oberve the results.
 	# OUTPUT:	* updated 'TotalNutrient' dictionnay with the average nutrient quantity per person

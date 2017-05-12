@@ -301,17 +301,18 @@ def ASSESS_sunshine(crop, PRA, x):
 	CurrentMonth = seed_from(crop)
 	# -----------------------------------------------------------------
 
-	while GrowingMonth <= maximum_growing_season_duration:
-		enough_sunshine = SOLmoy_ratio_northernCountries(month, PRA) <= 0.8
+	while GrowingMonth <= GSmax(crop):
+		enough_sunshine = SOLmoy_ratio_northernCountries(GrowingMonth, PRA) <= 0.8
 
 		if crop_needs_sun:
 			if not enough_sunshine:
-				x.all_crop_parameters_match_the_PRA_ones == False
+				x.edibleSunshine.append(False)
+				x.all_crop_parameters_match_the_PRA_ones = False
 				break
 			else :
-				x.edibleSunshine.append(crop)
+				x.edibleSunshine.append(True)
 		else:
-			x.edibleSunshine.append(crop)
+			x.edibleSunshine.append(True)
 
 		GrowingMonth += 1
 		CurrentMonth += 1
@@ -391,7 +392,7 @@ def ASSESS_Water(crop, PRA, x):
 		else:
 			#--------------------------------------
 			# if x.TOLERdrought * ETc <= WaterResources(CurrentMonth % 12, GSstart[crop], PRA, crop, x) <= ETc * x.TOLERflood:
-			if x.TOLERdrought * ETc <= WaterResources(CurrentMonth%12, GSstart[crop], PRA, crop, x):
+			if x.TOLERdrought * ETc <= WaterResources(CurrentMonth%12, seed_from(crop), PRA, crop, x):
 				edible_WaterRqt.append(True)
 			else:
 				edible_WaterRqt.append(False)
@@ -522,7 +523,8 @@ def PriorityAssessement(x, data):
 	#==============================================================================================================
 	#== Calculating the NATIONAL AGRICULTURAL SURFACE + QUANTITY PER INHABITANT (kg/week)
 
-	print("Priority Assessment...")
+	print("""
+	Priority Assessment...""")
 
 	#=== Total agricultural surface:
 	TotalAgriSurface = 0
@@ -537,7 +539,7 @@ def PriorityAssessement(x, data):
 	for PRA in country:
 		if PRA != 'headers_full' and PRA != 'headers_ID':
 
-			print("PRA {} (departement {}, region {})...".format( PRA, NOM_DEPT(PRA), NOM_REG(PRA) ) )
+			# print("PRA {} (departement {}, region {})...".format( PRA, NOM_DEPT(PRA), NOM_REG(PRA) ) )
 			TotalAgriSurface += PRAsurface(PRA)
 
 
@@ -672,6 +674,9 @@ def PriorityAssessement(x, data):
 					data.plants[crop]['PRIORITYfruits']	= 0 # not a fruit/nut tree
 					data.plants[crop]['PRIORITYtextile'] = 0 # not a textile
 
-				print("{} ({}) : 'ratio of adaptability' = {}, 'PRIORITYgeneral' = {}, 'PRIORITYfruits' = {}, 'PRIORITYtextile' = {}".format(prod_EN(crop), crop, data.plants[crop]['ratioADAPT'], data.plants[crop]['PRIORITYgeneral'], data.plants[crop]['PRIORITYfruits'], data.plants[crop]['PRIORITYtextile']))
+				# print("{} ({}) : 'ratio of adaptability' = {}, 'PRIORITYgeneral' = {}, 'PRIORITYfruits' = {}, 'PRIORITYtextile' = {}".format(prod_EN(crop), crop, data.plants[crop]['ratioADAPT'], data.plants[crop]['PRIORITYgeneral'], data.plants[crop]['PRIORITYfruits'], data.plants[crop]['PRIORITYtextile']))
+
+				print("""		Priority Assessment  [OK]
+				""")
 
 				# END if (in x.prodSURFACE)

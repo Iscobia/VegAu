@@ -22,6 +22,9 @@ class NoNutrients(Exception):
 class TenYears(Exception):
 	pass
 
+class LastCropsCC(Exception):
+	pass
+
 
 #########################################
 #										#
@@ -67,6 +70,9 @@ class x:
 	decomposition_month = {}
 	ActualStand = {}
 	totalYields = {}
+	totalYields_year = {}
+	LimitingFactor = {}
+
 	YIELD = 0
 	PestsDiseases_in_rotation = {}
 	VERIFprodBOT	= {}
