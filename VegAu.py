@@ -303,7 +303,7 @@ def ASSESS_PRArotation(x, data):
 	for PRAcursor, PRA in enumerate(country):
 
 		print("""Building a rotation for the PRA {} [{}%]
-					      """.format(PRA, round((PRAcursor / (len(environment) - 2)) * 100, 3)))
+					      """.format(PRA, round((PRAcursor / (len(environment))) * 100, 3)))
 
 		#============================================================================
 		#= Re-Setting up each variables for each PRA to start with the same variables
@@ -314,7 +314,6 @@ def ASSESS_PRArotation(x, data):
 		x.EndPreviousCrop_earlier = 3  # simulation begins in March
 		x.EndPreviousCrop_later = 3  # simulation begins in March
 		x.decomposition_month = {}
-
 		x.edibleCrops = list(x.edibleCropsID[PRA])
 		x.rotat[PRA] = [] # each tuple of 'rotat' gives the name of a crop with the last month of its Growing Season in the rotation
 		x.edibleCropsWR	= {}	# dictionary that will assign each crop index to a Water Resources assessment index
@@ -394,7 +393,8 @@ def ASSESS_PRArotation(x, data):
 							# Assess Companion Crop ? #
 							###########################
 
-							x.edibleCrops=[x.SelectedCrop]
+							x.edibleCrops=[x.PreviouslySelectedCrop]
+							x.SelectedCrop = x.PreviouslySelectedCrop
 
 							print("[{}][{}]	Simulating the Nutrients gain and removal...".format(PRA, x.EndPreviousCrop_later))
 							ASSESS_Nutrients(x, PRA)
@@ -566,7 +566,11 @@ def ASSESS_PRArotation(x, data):
 				break
 
 			if x.PreviouslySelectedCrop != None :
+				# x.rotat[PRA].append((x.PreviouslySelectedCrop, x.SelectedCC, x.EndPreviousCrop_later))
+				lastEntry = tuple(x.rotat[PRA][-1])
+				del x.rotat[PRA][-1]
 				x.rotat[PRA].append((x.PreviouslySelectedCrop, x.SelectedCC, x.EndPreviousCrop_later))
+				x.rotat[PRA].append(lastEntry)
 
 
 			# The following variable exists only to inform the user in the last print.
@@ -595,7 +599,7 @@ def ASSESS_PRArotation(x, data):
 			print("""At {}% of the database, the average rotation duration is of {} months ({} years)
 
 			=============================================================================
-			      """.format(round((PRAcursor/( len(country) -2) ) *100, 2), average_rotation_duration, round(average_rotation_duration/12, 1) ) )
+			      """.format(round((PRAcursor/( len(country)) ) *100, 2), average_rotation_duration, round(average_rotation_duration/12, 1) ) )
 
 			for crop in x.totalYields_year[PRA] :
 				if x.rotation_length[PRA] <= 1 :
@@ -603,19 +607,30 @@ def ASSESS_PRArotation(x, data):
 				else :
 					x.totalYields_year[PRA][crop] = round(x.totalYields_year[PRA][crop]/x.rotation_length[PRA], 3)
 
-			permanent_crops = [c for c in rotation_crops if prodCAT(c) == 0]
+			permanent_crops = [c for c in rotation_crops if prodCAT(c) == 1]
 
 			# Calculation of Limiting factors :
 			x.LimitingFactor[PRA] = [i for i in x.rotat[PRA] if x.rotat[PRA][0] == 'Limiting factor']
-			x.LimitingFactor[PRA] = list(set( [j for (i, j, k) in x.rotat[PRA]] ))
+			x.LimitingFactor[PRA] = list(set( [j for (i, j, k) in x.rotat[PRA] if j != None]))
 
 			x.results[PRA] = [x.rotation_length[PRA], len(list(set(rotation_crops))) ,len(rotation_crops), list(set(rotation_crops)), rotation_crops, len(permanent_crops), permanent_crops, x.LimitingFactor[PRA]]
 
 		# END for (pra in country)
 
-	print("END STEP 2")
+	x.totalYields_year["TOTAL"] = {}
 
-	
+	for PRA in x.totalYields_year.keys():
+		for crop in x.totalYields_year[PRA].keys():
+			if 'CC' not in crop : # excuding Cover Crops from the total
+
+				if crop not in x.totalYields_year["TOTAL"]:
+					x.totalYields_year["TOTAL"][crop]  = x.totalYields_year[PRA][crop]
+				else:
+					x.totalYields_year["TOTAL"][crop] += x.totalYields_year[PRA][crop]
+
+	x.totalYields_year = x.totalYields_year["TOTAL"]
+
+	print("END STEP 2")
 
 
 
@@ -648,12 +663,31 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 	### creating the sheets for the rotation calculation and importing the automatic columns creation + associated functions:
 	
 	ASSESS_PRArotation(x, data)
-	with open('firsDemain je le refert_results.py', 'w') as saves:
-		saves.write("""results = {
-""")
-		for entry in x.results:
-			saves.write("""	{}
-			""".format(x.results[entry]))
+
+	#==================================================================================================================================
+	#== Saving the results :
+
+	x.results["headers"] = ["Rotation length", "Different crops in the rotation (amount)",
+	                        "Total amount of crops in the rotation", "Different crops in the rotation (ID)",
+	                        "Crops in the rotation (ID)", "Permanent crop ?", "Permanent crop ID",
+	                        "Limiting Factor(s)"]
+
+	with open('first_results.py', 'a') as saves:
+		pass # makes sure that the file exists : if there is no file with this name, its creates it
+
+	with open('first_results.py', 'w') as saves:
+		saves.write("""results = {\n """)
+		for entry in sorted(x.results.keys()):
+			saves.write("""	'{}': {},\n """.format(entry, x.results[entry]))
+	#-----------------------------------------------------------------------------------------------
+	with open('first_results.csv', 'a') as saves:
+		pass # makes sure that the file exists : if there is no file with this name, its creates it
+
+	with open('first_results.csv', 'w') as saves:
+		saves.write("'';"+";".join(x.results["headers"])+'\n')
+		for entry in sorted(x.results.keys()):
+
+			saves.write("	'{}'; {}\n".format( str(entry), str(";".join(x.results[entry])) ))
 
 
 	#==================================================================================================================================
@@ -688,7 +722,7 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 	print("|	Crop	|	Daily Product Amount/Person	|")
 	
 	for crop in x.DailyResources.keys():
-		print("|	crop	|		round(x.DailyResources[crop], 2)		|  ")
+		print("|	{}	|		{}		|  ".format(crop, round(x.DailyResources[crop], 2)))
 	print("______________________________________________")
 	
 	#======================================================================================
@@ -696,12 +730,37 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 	print("				_________________________________________________________________________")
 	print("				|	Gender	|	Age class	|	Crop	|	% of BME	|	% of ANR/AS	|	% of AMT	|")
 	print("__________________________________________________________________________________________")
+
+	# ==================================================================================================================================
+	#
 	
-	for gender in x.results.keys():
-		for age in x.results['gender'].keys():
-			for nutrient in x.results['gender']['age'].keys():
+	genders = [i for i in x.results.keys() if i == 'Nourrisson' or i == 'Enfants' or i == 'Femmes' or i == 'Hommes']
+	
+	for gender in genders:
+		for age in x.results[gender].keys():
+			for nutrient in x.results[gender][age].keys():
 				print("|	{}	|	{}	|		{}		|		{}		|		{}		|		{}		|". format(nutrient, gender, age, x.results[gender][age][nutrient]['pctBME'], x.results[gender][age][nutrient]['pctANR_AS'], x.results[gender][age][nutrient]['pctAMT']))
 	print("__________________________________________________________________________________________")
+
+	with open('dietary_results.py', 'a') as saves:
+		pass  # makes sure that the file exists : if there is no file with this name, its creates it
+	
+	with open('dietary_results.py', 'w') as saves:
+		saves.write('results = { '+'\n')
+		for entry in genders:
+			saves.write(str(genders[entry]) +', \n')
+	# -----------------------------------------------------------------------------------------------
+	with open('dietary_results.csv', 'a') as saves:
+		pass  # makes sure that the file exists : if there is no file with this name, its creates it
+	
+	with open('dietary_results.csv', 'w') as saves:
+		saves.write("Crop ; Daily Product Amount/Person" + '\n')
+		for crop in x.DailyResources.keys():
+			saves.write("{};{} \n".format(crop, round(x.DailyResources[crop], 2)))
+
+		saves.write( '\n' * 2 + ";".join(genders["headers"]) + '\n')
+		for entry in genders:
+			saves.write(";".join(genders[entry]) + '\n')
 
 #Code's end
 os.system("pause")# allows the window to stay open to see the results or eventual errors

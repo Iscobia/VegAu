@@ -172,7 +172,6 @@ def ASSESS_QTTperPERSON(x, nutrition):
 	* fulfilled 'Results' sheet
 	"""
 	
-	
 	totalPopulation = 64859599 # INSEE, estimated population for the 1st of January 2017
 	PopulationPyramid = {
 		'Nourrissons' :  {'0-6 mois': 714683/2, '7-12 mois': 714683/2},

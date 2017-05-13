@@ -381,7 +381,6 @@ def mineralizedN(crop, month):
 
 def ASSESS_SeedingDate(PRA, x):
 	"""INPUT :
-	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
 	*	PRA		is the ID of a current PRA. It allows to call the related data in the 'environment' dictionary.
 	*	x		is the class that contains all self variables used in all VegAu's functions
 
@@ -398,6 +397,7 @@ def ASSESS_SeedingDate(PRA, x):
 	is before the latest end of the previous crop's GS
 	"""
 
+	x.edibleCrops = list(x.edibleCropsID[PRA])
 	x.DelayIndex = {}
 
 	for crop in x.edibleCropsID[PRA]:
@@ -475,18 +475,18 @@ def ASSESS_SeedingDate(PRA, x):
 				x.laterCrops.append( (crop, PlantingDate_1) )
 				x.GSstart[crop] = PlantingDate_1
 				if PlantingDate_1 > x.EndPreviousCrop_later:
-					x.DelayIndex[crop] = 1 - ((PlantingDate_1 - x.EndPreviousCrop_later) / 12)
+					x.DelayIndex[crop] = 1 - ((PlantingDate_1 - x.EndPreviousCrop_later%12) / 12)
 				else :
-					x.DelayIndex[crop] = 1 - ((PlantingDate_1 + 12 - x.EndPreviousCrop_later) / 12)
+					x.DelayIndex[crop] = 1 - ((PlantingDate_1 + 12 - x.EndPreviousCrop_later%12) / 12)
 
 			# if there are less than 5 crops in x.edibleCrops + delay1, we add delay2
-			if len(delay1) + len(x.edibleCrops) < 5:
+			if len(delay2) + len(x.edibleCrops) < 5:
 				x.laterCrops.append((crop, PlantingDate_2))
 				x.GSstart[crop] = PlantingDate_2
 				if PlantingDate_1 > x.EndPreviousCrop_later:
-					x.DelayIndex[crop] = 1 - ((PlantingDate_2 - x.EndPreviousCrop_later) / 12)
+					x.DelayIndex[crop] = 1 - ((PlantingDate_2 - x.EndPreviousCrop_later%12) / 12)
 				else :
-					x.DelayIndex[crop] = 1 - ((PlantingDate_2 + 12 - x.EndPreviousCrop_later) / 12)
+					x.DelayIndex[crop] = 1 - ((PlantingDate_2 + 12 - x.EndPreviousCrop_later%12) / 12)
 
 		# if there was no edible crop for this season, we add delayed crops
 		if x.edibleCrops == []:
@@ -1052,6 +1052,12 @@ def SELECT_CashCrop(x, PRA, data):
 
 	print("[{}][{}]	Calculating the yield for the Selected Crop...".format(PRA, x.EndPreviousCrop_later))
 
+	# adapting the surface of the study area
+	x.YIELD = expYIELD(x.SelectedCrop) * PRAsurface(PRA)
+
+	# adapting the yield proportionnaly to the Water Resources quality
+	x.YIELD *= x.WRmargin_moy[x.SelectedCrop]
+
 	x.YIELD *= x.edibleCropsPnD[x.SelectedCrop]  # adapt the yield proportionnaly to the Pests and Diseases risks.
 
 	if x.SelectedCrop in x.totalYields:
@@ -1560,9 +1566,7 @@ def APPLY_SelectedCrop_Harvest(PRA, x):
 	It takes into account the decomposition of previous crop thanks the dictionary x.decomposition_month.
 	"""
 	
-	# adapting the yield proportionnaly to the Water Resources quality
-	x.YIELD =  expYIELD(x.SelectedCrop) * x.WRmargin_moy[x.SelectedCrop]
-	
+
 	monthInGS = 1
 	end_of_the_shortest_GS = GSmin(x.SelectedCrop)
 	# Calculating the nutrients that are REMOVED while the GS of the newly x.SelectedCrop:
