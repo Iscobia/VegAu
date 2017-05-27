@@ -35,7 +35,6 @@ from selfVariables import *
 #~ 
 	#~ #-- from step 3: (cf Functions_step3)
 	#~ RecommendedDailyIntakeAmount = {} # dict with all nutritional feature for which there is a Recommended Daily Intake Amount 
-	#~ MinimumDailyIntakeAmount	= {}  # dict taking 15% of each Recommended Daily Intake Amount as the minimum Intake (acc. to European Union Comission)
 	#~ DailyResources = {}
 	#~ results = {}
 
@@ -91,7 +90,7 @@ class data:
 	plants = plants
 
 
-def PRAedibilityTest(x, data):
+def MDL_EdibilityTest(x, data):
 	"""INPUT :
 	*	x		is the class that contains all self variables used in all VegAu's functions
 	*	data	is the class that contains the original 'plants' and 'environment' data bases
@@ -266,7 +265,7 @@ def PRAedibilityTest(x, data):
 	# needs the x.prodSURFACE value to be copied in PRAedibility (cf previous function)
 		
 
-def ASSESS_PRArotation(x, data):
+def MDL_Rotation(x, data):
 	"""INPUT :
 	*	x		is the class that contains all self variables used in all VegAu's functions
 	*	data	is the class that contains the original 'plants' and 'environment' data bases
@@ -296,17 +295,20 @@ def ASSESS_PRArotation(x, data):
 
 
 	country		=	sorted( [PRA for PRA in list(data.environment.keys()) if PRA != 'headers_full' and PRA != 'headers_ID'] )
-	
+	x.totalYields["TOTAL"] = {}
+
 	#===========================================================================
 	#===========================================================================
 	
 	for PRAcursor, PRA in enumerate(country):
 
 		print("""Building a rotation for the PRA {} [{}%]
-					      """.format(PRA, round((PRAcursor / (len(environment))) * 100, 3)))
+						  """.format(PRA, round(( (PRAcursor+1) / (len(environment))) * 100, 3)))
 
 		#============================================================================
 		#= Re-Setting up each variables for each PRA to start with the same variables
+
+		x.CHOICE[PRA] = []
 
 		x.PreviouslySelectedCrop = None
 		x.SelectedCrop = None
@@ -316,18 +318,17 @@ def ASSESS_PRArotation(x, data):
 		x.decomposition_month = {}
 		x.edibleCrops = list(x.edibleCropsID[PRA])
 		x.rotat[PRA] = [] # each tuple of 'rotat' gives the name of a crop with the last month of its Growing Season in the rotation
-		x.edibleCropsWR	= {}	# dictionary that will assign each crop index to a Water Resources assessment index
-		x.edibleCropsPnD	= {}	# dictionary that will assign each crop index to a Pest and Diseases assessment index
+		x.indexWR	= {}	# dictionary that will assign each crop index to a Water Resources assessment index
+		x.indexPnD	= {}	# dictionary that will assign each crop index to a Pest and Diseases assessment index
+		x.indexNutrients = {}
 
-		x.NutrientsMargin = {}
-		x.WRmargin_moy	= {}
-
+		x.LimitingFactor[PRA] = []
 		x.VERIFprodBOT = {}
 		x.PestsDiseases_in_rotation = {}	# dictionary that will assign each crop index to x.YIELD depreciating index if it is  subject to Pest and Diseases risks.
 
 
 		x.ActualStand[PRA] = {"N": nmin_med(PRA), "P": P_med(PRA), "K": K_med(PRA), "Na": nao_med(PRA), "Mg": mgo_med(PRA), "Ca": cao_med(PRA), "Mn": mned_med(PRA), "Fe": feed_med(PRA), "Cu": cued_med(PRA), "OM": corgox_med(PRA)}
-		x.totalYields_year[PRA] = {}
+		x.totalYields[PRA] = {}
 		x.LimitingFactorReached = False
 		x.no_delay_because_of_T_or_water = True
 
@@ -373,7 +374,7 @@ def ASSESS_PRArotation(x, data):
 							# The while loop seemed not to be enough...
 
 						if x.PreviouslySelectedCrop != None :
-							the_selected_crop_is_a_permanent_crop = prodCAT(x.PreviouslySelectedCrop) == 1  # fruit/nut tree, shrub
+							the_selected_crop_is_a_permanent_crop = prodCAT(x.PreviouslySelectedCrop) == 1 or prodCAT(x.PreviouslySelectedCrop) == 2 # fruit/nut tree, shrub
 						else:
 							pass
 						# except KeyError:  # if there is no "Previously Selected Crop", VegAu has to proceed with the rotation simulation
@@ -394,7 +395,6 @@ def ASSESS_PRArotation(x, data):
 							###########################
 
 							x.edibleCrops=[x.PreviouslySelectedCrop]
-							x.SelectedCrop = x.PreviouslySelectedCrop
 
 							print("[{}][{}]	Simulating the Nutrients gain and removal...".format(PRA, x.EndPreviousCrop_later))
 							ASSESS_Nutrients(x, PRA)
@@ -402,8 +402,6 @@ def ASSESS_PRArotation(x, data):
 							if x.LimitingFactorReached == False:
 
 								APPLY_SelectedCrop_Harvest(PRA, x)
-
-								x.totalYields[x.SelectedCrop] += expYIELD(x.SelectedCrop) * x.WRmargin_moy[x.SelectedCrop]
 
 								# =======================================================================================================
 								# yet, we can update VERIFYprodBOT, x.GSstart and the cells from PRArotat by adding the prodID of the previously selected crop
@@ -414,8 +412,6 @@ def ASSESS_PRArotation(x, data):
 								# the SelectedCrop just never changes (tree --> permanent) : the next start
 								# of its growing season will be one year later
 								x.GSstart += 12
-
-								UPDATE_EndPreviousCrop_rotat(PRA,x)
 								# now, x.GSstart corresponds to the duration from the beginning of the rotation up to x.GSstart[x.SelectedCrop]
 
 								print("[{}][{}]	GSstart = {}".format(PRA, x.EndPreviousCrop_later,x.GSstart))
@@ -429,7 +425,8 @@ def ASSESS_PRArotation(x, data):
 						# =======================================================================================================
 
 						else:
-							x.edibleCrops = list(x.edibleCropsID[PRA])
+							# For the moment, excluding rhubarb (kind of permanent crop)
+							x.edibleCrops = [c for c in x.edibleCropsID[PRA] if c != 'RBRB']
 
 							x.edibleCrops = [c for c in x.edibleCrops if c != 'CC-GRASSorchard'] # excluding orchard grass from edible crops
 							x.GSstart = {} # key = prodID, value = first month of the potential growing season
@@ -449,19 +446,19 @@ def ASSESS_PRArotation(x, data):
 							ASSESS_WaterResources(PRA, x)
 							# after this function, we get:
 							#		* an updated "x.edibleCrops' list
-							#		* an 'edibleCropsWR' dictionary with :
+							#		* an 'indexWR' dictionary with :
 							#			*	keys = CROProw
 							#			*	values = standardized "WaterResources evaluation" (WReval)
 
 							if x.no_delay_because_of_T_or_water == True:
 
 								print("""
-	[{}][{}]	Checking the nutrient requirements for remaining crops...""". format(PRA, x.EndPreviousCrop_later))
+[{}][{}]	Checking the nutrient requirements for remaining crops...""". format(PRA, x.EndPreviousCrop_later))
 
 								ASSESS_Nutrients(x, PRA)
 								# after this function, we get:
 								#	* an updated "x.edibleCrops' list
-								#	* a x.NutrientsMargin dictionary with:
+								#	* a x.indexNutrients dictionary with:
 								#			*	keys = CROProw
 								#			*	values = standardized nutrients margin
 
@@ -484,9 +481,6 @@ def ASSESS_PRArotation(x, data):
 
 									SELECT_CashCrop(x, PRA, data)
 									# This function selects the best crop according to the previously calculated indexes and the Priority indexes.
-
-
-									UPDATE_EndPreviousCrop_rotat(PRA, x)
 
 
 									print("[{}][{}]	It will mature until the {}th (earlier : {}) or the {}th (later : {}) month of the rotation.".
@@ -537,7 +531,7 @@ def ASSESS_PRArotation(x, data):
 
 							# END if (x.no_delay_because_of_T_or_water == True)
 
- 						#END if (the_selected_crop_is_a_permanent_crop)
+						#END if (the_selected_crop_is_a_permanent_crop)
 
 						if x.EndPreviousCrop_later > 120:
 							raise TenYears
@@ -565,15 +559,8 @@ def ASSESS_PRArotation(x, data):
 				print("Not enough nutrients")
 				break
 
-			if x.PreviouslySelectedCrop != None :
-				# x.rotat[PRA].append((x.PreviouslySelectedCrop, x.SelectedCC, x.EndPreviousCrop_later))
-				lastEntry = tuple(x.rotat[PRA][-1])
-				del x.rotat[PRA][-1]
-				x.rotat[PRA].append((x.PreviouslySelectedCrop, x.SelectedCC, x.EndPreviousCrop_later))
-				x.rotat[PRA].append(lastEntry)
 
-
-			# The following variable exists only to inform the user in the last print.
+			# The following variable exists to inform the user in the last print AND for a x.results[PRA] entry.
 			rotation_crops = [crop for (crop, companion, last_month) in x.rotat[PRA] if (crop != 'start' and crop != 'Limiting factor' and 'delay' not in crop and 'season' not in crop)]
 
 			if x.LimitingFactorReached == True :
@@ -584,13 +571,21 @@ def ASSESS_PRArotation(x, data):
 
 				""".format( PRA, x.EndPreviousCrop_later, x.rotat[PRA][-1][1], len(list(set(rotation_crops))), len(rotation_crops), MonthID(x.EndPreviousCrop_later), rotation_crops ))
 
-			else:
+			elif x.EndPreviousCrop_later > 120 :
 				print("""
 	[{}][{}]	END OF THE ROTATION : The rotation reached 10 years --> switching to next PRA
 
 	{} different crops out of {} succeeded until {}: {}
 								""".format(PRA, x.EndPreviousCrop_later, len(list(set(rotation_crops))) ,len(rotation_crops), MonthID(x.EndPreviousCrop_later),
-				                           rotation_crops))
+										   rotation_crops))
+			else:
+				print("""
+[{}][{}]	END OF THE ROTATION : An error has been raised, the while loop is broken ("break")
+
+			    	{} different crops out of {} succeeded until {}: {}
+			    								""".format(PRA, x.EndPreviousCrop_later, len(list(set(rotation_crops))),
+														   len(rotation_crops), MonthID(x.EndPreviousCrop_later),
+														   rotation_crops))
 
 			x.rotation_length[PRA] = (x.EndPreviousCrop_later - 2)  # because it started in March
 
@@ -599,38 +594,28 @@ def ASSESS_PRArotation(x, data):
 			print("""At {}% of the database, the average rotation duration is of {} months ({} years)
 
 			=============================================================================
-			      """.format(round((PRAcursor/( len(country)) ) *100, 2), average_rotation_duration, round(average_rotation_duration/12, 1) ) )
+				  """.format(round(((PRAcursor+1)/( len(country)) ) *100, 2), average_rotation_duration, round(average_rotation_duration/12, 1) ) )
 
-			for crop in x.totalYields_year[PRA] :
-				if x.rotation_length[PRA] <= 1 :
-					x.totalYields_year[PRA][crop] = 0
-				else :
-					x.totalYields_year[PRA][crop] = round(x.totalYields_year[PRA][crop]/x.rotation_length[PRA], 3)
+			permanent_crops = [c for c in rotation_crops if (prodCAT(c) == 1 or prodCAT(c) == 2)]
 
-			permanent_crops = [c for c in rotation_crops if prodCAT(c) == 1]
+			x.results[PRA] = [x.rotation_length[PRA], len(list(set(rotation_crops))) ,len(rotation_crops), ", ".join(list(set(rotation_crops))), ", ".join(rotation_crops), len(permanent_crops), ", ".join(permanent_crops), ", ".join(x.LimitingFactor[PRA])]
 
-			# Calculation of Limiting factors :
-			x.LimitingFactor[PRA] = [i for i in x.rotat[PRA] if x.rotat[PRA][0] == 'Limiting factor']
-			x.LimitingFactor[PRA] = list(set( [j for (i, j, k) in x.rotat[PRA] if j != None]))
+			# END while (x.LimitingFactorReached == False or x.EndPreviousCrop_later <= 120)-------------------------
 
-			x.results[PRA] = [x.rotation_length[PRA], len(list(set(rotation_crops))) ,len(rotation_crops), list(set(rotation_crops)), rotation_crops, len(permanent_crops), permanent_crops, x.LimitingFactor[PRA]]
+		for crop in x.totalYields[PRA] :
+			if x.rotation_length[PRA] > 0 :
+				x.totalYields[PRA][crop] = round(x.totalYields[PRA][crop]/(x.rotation_length[PRA]/12), 3)
 
-		# END for (pra in country)
-
-	x.totalYields_year["TOTAL"] = {}
-
-	for PRA in x.totalYields_year.keys():
-		for crop in x.totalYields_year[PRA].keys():
 			if 'CC' not in crop : # excuding Cover Crops from the total
-
-				if crop not in x.totalYields_year["TOTAL"]:
-					x.totalYields_year["TOTAL"][crop]  = x.totalYields_year[PRA][crop]
+				if crop not in x.totalYields["TOTAL"].keys():
+					x.totalYields["TOTAL"][crop]  = round(x.totalYields[PRA][crop], 3)
 				else:
-					x.totalYields_year["TOTAL"][crop] += x.totalYields_year[PRA][crop]
+					x.totalYields["TOTAL"][crop] += round(x.totalYields[PRA][crop], 3)
 
-	x.totalYields_year = x.totalYields_year["TOTAL"]
+		# END for (pra in country)-----------------------------------------------------------------------------------
 
-	print("END STEP 2")
+	x.totalYields = x.totalYields["TOTAL"]
+
 
 
 
@@ -643,7 +628,7 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 	print("""===================== STEP 1 =====================
 	Assessing edible Crops for each PRA according to Environmental (Climate and Soil) Data and Biological Data""")
 
-	# PRAedibilityTest(x, data) # complete function
+	# MDL_EdibilityTest(x, data) # complete function
 
 	#----------------------------
 	#-- Function for test
@@ -662,15 +647,17 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 	### STEP 2
 	### creating the sheets for the rotation calculation and importing the automatic columns creation + associated functions:
 	
-	ASSESS_PRArotation(x, data)
+	MDL_Rotation(x, data)
 
 	#==================================================================================================================================
 	#== Saving the results :
 
 	x.results["headers"] = ["Rotation length", "Different crops in the rotation (amount)",
-	                        "Total amount of crops in the rotation", "Different crops in the rotation (ID)",
-	                        "Crops in the rotation (ID)", "Permanent crop ?", "Permanent crop ID",
-	                        "Limiting Factor(s)"]
+							"Total amount of crops in the rotation", "Different crops in the rotation (ID)",
+							"Crops in the rotation (ID)", "Permanent crop ?", "Permanent crop ID",
+							"Limiting Factor(s)"]
+	# -----------------------------------------------------------------------------------------------
+	# Exporting the results in a new python file
 
 	with open('first_results.py', 'a') as saves:
 		pass # makes sure that the file exists : if there is no file with this name, its creates it
@@ -679,15 +666,18 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 		saves.write("""results = {\n """)
 		for entry in sorted(x.results.keys()):
 			saves.write("""	'{}': {},\n """.format(entry, x.results[entry]))
+		saves.write("""	{}""".format('}'))
 	#-----------------------------------------------------------------------------------------------
-	with open('first_results.csv', 'a') as saves:
-		pass # makes sure that the file exists : if there is no file with this name, its creates it
+	# Exporting the results in a .csv file :
 
-	with open('first_results.csv', 'w') as saves:
-		saves.write("'';"+";".join(x.results["headers"])+'\n')
-		for entry in sorted(x.results.keys()):
-
-			saves.write("	'{}'; {}\n".format( str(entry), str(";".join(x.results[entry])) ))
+	# with open('first_results.csv', 'a') as saves:
+	# 	pass # makes sure that the file exists : if there is no file with this name, its creates it
+	#
+	# with open('first_results.csv', 'w') as saves:
+	# 	saves.write("''; " + "; ".join(x.results["headers"])+'\n')
+	# 	for entry in sorted(x.results.keys()):
+	#
+	# 		saves.write("	'{}'; {}\n".format( str(entry), str("; ".join(x.results[entry])) ))
 
 
 	#==================================================================================================================================
@@ -698,11 +688,7 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 		Calculating the average daily nutritional value per person for the total yield...""")
 
 
-	ASSESS_FoodNutrients( x, nutrition )
-	# --> It sums the nutrients and vitamins of all products in the appropriate variables (1 variable per nutritional feature)
-	# of the dictionary 'TotalNutrients' (each key corresponds to a nutrient, vitamin or other dietetic feature)
-
-	ASSESS_QTTperPERSON( x, nutrition )
+	MDL_QTTperPERSON( x, nutrition )
 	# This function updates the 'TotalNutrients' dictionary by dividing each nutrient amount by the total population
 	# and copies the results in the sheet 'NUTRIassess' for each crop in order to keep a friendly interface to oberve the results.
 	# OUTPUT:	* updated 'TotalNutrient' dictionnay with the average nutrient quantity per person
@@ -720,7 +706,8 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 	### Showing the results on the screen:
 	print("______________________________________________")
 	print("|	Crop	|	Daily Product Amount/Person	|")
-	
+	print("|	Crop	|	Daily Product Amount/Person	|")
+
 	for crop in x.DailyResources.keys():
 		print("|	{}	|		{}		|  ".format(crop, round(x.DailyResources[crop], 2)))
 	print("______________________________________________")

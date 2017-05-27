@@ -33,7 +33,14 @@ class LastCropsCC(Exception):
 #########################################
 
 class x:
-	#-- from step 1:
+	#=======================================================
+	#== COMMON VARIABLES:
+	results = {}
+
+
+
+	#=======================================================
+	#== FROM STEP 1:
 	all_crop_parameters_match_the_PRA_ones = True
 
 	TOLERdrought = 0
@@ -44,45 +51,73 @@ class x:
 	edibleCropsEN = {}
 	edibleCropsFR = {}
 	edibleCropsDE = {}
-	
-	#-- from step 2:
+
+
+	#=======================================================
+	#== FROM STEP2:
+
+	#-------------------------------------------------------
+	#-- Selection variables :
+
 	edibleCrops     = {}
-	laterCrops      = {}
-	DelayIndex      = {}
-	edibleCropsPnD	= {}
-	WRmargin_moy	= {}
-	edibleCropsWR	= {}
 	edibleCompanionCrops = {}
-	CCedibility = {}	# dictionary from ASSESS_Water_CompanionCrop... with the different nutrients margins
-						# ---> used if the selected Companion Crop needs more nutrients than the soil can provide.
-	prodSURFACE = {}
+	laterCrops      = {}
+	# --------------------------------------
+	indexDelay      = {}	# before : DelayIndex
+	indexPnD	= {}	# before : edibleCropsPnD
+	indexWR	= {}	# before : edibleCropsWR
+	indexNutrients = {}	# before : NutrientsMargin
+	# --------------------------------------
+	CCwater = {}	# before : CCedibility. Dictionary from ASSESS_Water_CompanionCrop... with the different nutrients margins
+					# ---> used if the selected Companion Crop needs more nutrients than the soil can provide.
+	# --------------------------------------
+	SelectedCrop = None
+	SelectedCC = None
+	PreviouslySelectedCrop = None
+
+
+	# -------------------------------------------------------
+	# -- Temporal variables
 	GSstart = 0
-	# EndPreviousCrop = 0
 	EndPreviousCrop_earlier = 0
 	EndPreviousCrop_later = 0
-	SelectedCrop =	None
-	SelectedCC	=	None
-	PreviouslySelectedCrop = None
+
+	#-------------------------------------------------------
+	#-- Analytical variables
+
+	# Territorial  repartition
+	prodSURFACE = {}
+	ActualStand = {}
+
+	# Limiting Factors (lack of nutrients, pests and diseases)
+	LimitingFactor = {}
+	PestsDiseases_in_rotation = {}
+	VERIFprodBOT = {}
+	rotation_length = {}
+
+	# Yields
+	totalYields = {}
+	YIELD = 0
+
+	# Rotations analysis
+	rotat = {}
+	representativity = {}
+	CHOICE = {}
+	# --> for each PRA, CHOICE must give back the **list** that has been chosen to chose the Selected Crop
+	# It allow to see how the crops choice occurs.
+	# The format of an occurence looks like : (dictionnary name, length of the dict)
+
+
+	#-------------------------------------------------------
+	#-- Coordination variables
 
 	LimitingFactorReached = False
 	no_delay_because_of_T_or_water = True
-
 	decomposition_month = {}
-	ActualStand = {}
-	totalYields = {}
-	totalYields_year = {}
-	LimitingFactor = {}
 
-	YIELD = 0
-	PestsDiseases_in_rotation = {}
-	VERIFprodBOT	= {}
-	rotation_length = {}
-	rotat = {}
 
+	#=======================================================
+	#== FROM STEP 3: (cf Functions_step3)
 	TotalNutrients = {}
-	NutrientsMargin = {}
-
-	#-- from step 3: (cf Functions_step3)
-	MinimumDailyIntakeAmount	= {}  # dict taking 15% of each Recommended Daily Intake Amount as the minimum Intake (acc. to European Union Comission)
 	DailyResources = {}
-	results = {}
+
