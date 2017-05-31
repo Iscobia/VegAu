@@ -63,18 +63,22 @@ def WaterResources(month, GSstart, PRA, crop, x):
 
 	GSmid	= round(GSmax(crop) * 0.50 )
 
-	if GrowingMonth <= GSmid:
-		RootingDepth = rootDEPTH(crop) * GrowingMonth/GSmid # we assume that the rooting capacity is proportional to
-															# the duration from planting to the middle of the growing
-															# season. After the middle of the GS, roots are assumed to
-															# be mature.
+	if prodCAT(crop) != 1 and prodCAT(crop) != 2 : # if the crop is a permanent crop, roots keep the same depth
+		if GrowingMonth <= GSmid:
+			RootingDepth = rootDEPTH(crop) * GrowingMonth/GSmid # we assume that the rooting capacity is proportional to
+																# the duration from planting to the middle of the growing
+																# season. After the middle of the GS, roots are assumed to
+																# be mature.
+		else:
+			RootingDepth = rootDEPTH(crop)
+
+		#-------------------------------------------------
+		# Making sure that the rooting depth is deep enough to allow the calculation. (setting a minimum value)
+		if RootingDepth < 5:
+			RootingDepth = 5 # cm
+
 	else:
 		RootingDepth = rootDEPTH(crop)
-
-	#----------------------------------------------------
-	# Making sure that the rooting depth is deep enough to allow the calculation. (setting a minimum value)
-	if RootingDepth < 5:
-		RootingDepth = 5 # cm
 	# ----------------------------------------------------
 	maximum_available_water_capacity =	round( ( AWC_SoilType + AWC_OM ) * ( RootingDepth/10 ) )
 
@@ -358,6 +362,9 @@ def ASSESS_Water(crop, PRA, x):
 	CurrentMonth = seed_from(crop)
 
 	while GrowingMonth <= maximum_growing_season_duration:
+		# Following line can be removed once the issue is solved
+		waterResources = WaterResources(CurrentMonth%12, seed_from(crop), PRA, crop, x)
+
 		#= Determining the current stage of the GS =============================================
 		if GrowingMonth <= GS1_4 :
 			ETc = Kc1_4(crop) * ETPmoy(CurrentMonth, PRA)

@@ -1491,7 +1491,11 @@ def ASSESS_Nutrients_CompanionCrop(x, PRA):
 						# If there are still x.edible Companion Crops, another one is chosen according to its Water Requirements:	#
 						# for crop in x.edibleCompanionCrops :																		# state for the function before the replacement
 						# 	if x.CCwater[crop] == max(x.CCwater.values()):													# by the next line (we consider all edible ComppanionCrops anyway !...?)
-						# 		crop = str(crop)																					#
+						# 		crop = str(crop)
+
+					monthInGS += 1
+					# END while (monthInGS < endGSmin)
+
 
 
 					# else there are still indexes from the crop selection which can be used to compare remaining crops.

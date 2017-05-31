@@ -605,17 +605,17 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 	print("""===================== STEP 1 =====================
 	Assessing edible Crops for each PRA according to Environmental (Climate and Soil) Data and Biological Data""")
 
-	MDL_EdibilityTest(x, data) # complete function
+	# MDL_EdibilityTest(x, data) # complete function
 
 	#---------------------------------------------------------------------------------------
 	#-- FOR TESTS
-	# x.edibleCropsID = CropRepartition_ID
-	# x.edibleCropsEN = CropRepartition_EN
-	# x.edibleCropsFR = CropRepartition_FR
-	# x.edibleCropsDE = CropRepartition_DE
-	# x.prodSURFACE = prodSURFACE
-	#
-	# ASSESS_Priority(x, data)
+	x.edibleCropsID = CropRepartition_ID
+	x.edibleCropsEN = CropRepartition_EN
+	x.edibleCropsFR = CropRepartition_FR
+	x.edibleCropsDE = CropRepartition_DE
+	x.prodSURFACE = prodSURFACE
+
+	ASSESS_Priority(x, data)
 
 	# ---------------------------------------------------------------------------------------
 

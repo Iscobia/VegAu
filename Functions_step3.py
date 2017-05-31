@@ -75,8 +75,8 @@ def MDL_QTTperPERSON(x, nutrition):
 		# converting the total Yields from tons to kilogramms
 		# total_yield			=	round(float(x.totalYields[crop]) * 1000, 3) # x.totalYields gives bigger amounts than x.totalYields... waiting better results
 		total_yield = round(float(x.totalYields[crop]) * 1000, 3)
-		productQuantity = float(prodQUANTITY(crop))
-		x.DailyResources[crop] = ((total_yield * productQuantity) / 365) / totalPopulation
+		# productQuantity = float(prodQUANTITY(crop))
+		# x.DailyResources[crop] = ((total_yield * productQuantity) / 365) / totalPopulation
 
 		# -------------------------------------------------------------------------------------------------------------------------
 		CropNutrients = {
@@ -90,7 +90,7 @@ def MDL_QTTperPERSON(x, nutrition):
 			'Zn'	:	Zinc(crop),
 			'Se'	:	Selenium(crop),
 			'I'		:	Iode(crop),
-			'Proteins'		:	Proteinses(crop),  # "protéines brutes" (in the Ciqual table)
+			'Proteins'		:	Proteines(crop),  # "protéines brutes" (in the Ciqual table)
 			'carbohydrates'	:	Glucides(crop), # "Glucides" in the Cequal table
 			'sugar'			:	Sucres(crop),
 			'energy_kJ'		:	energie_kJ(crop), # calculated according to the "Réglement UE Né 1169/2011"'	:	do not take fibres into account
