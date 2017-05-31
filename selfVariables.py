@@ -46,7 +46,6 @@ class x:
 	TOLERdrought = 0
 	TOLERflood	= 0
 	edible_Tmin = []
-	edibleSunshine = []
 	edibleCropsID = {}
 	edibleCropsEN = {}
 	edibleCropsFR = {}
@@ -59,7 +58,8 @@ class x:
 	#-------------------------------------------------------
 	#-- Selection variables :
 
-	edibleCrops     = {}
+	edibleCrops     = []
+	edibleCrops_init = []
 	edibleCompanionCrops = {}
 	laterCrops      = {}
 	# --------------------------------------
@@ -97,7 +97,6 @@ class x:
 
 	# Yields
 	totalYields = {}
-	YIELD = 0
 
 	# Rotations analysis
 	rotat = {}

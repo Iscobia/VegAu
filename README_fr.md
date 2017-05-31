@@ -23,7 +23,7 @@ Les **résultats** sont également **copiés vers un tableur "output.ods"** tant
       3. **importation: PRAyields.py** : crée la la feuille de calcul "PRAyields" et y gère la création et lecture des colonnes, lignes et données
       4. **importation: step1.py**
       5. **fonction: `PRAedibilityTest()` (step1)**: Soumission de chaque culture à un **test d'éligibilité pour chaque PRA** pour le temps de sa période de gestation
-      6. **fonction: `PriorityAssessement()` (step1)**: pour chaque culture, **calcul d'indices "d'adaptabilité" et de priorité**
+      6. **fonction: `ASSESS_Priority()` (step1)**: pour chaque culture, **calcul d'indices "d'adaptabilité" et de priorité**
       7. **importation: PRArotat.py** -> crée la la feuille de calcul "PRAedibility" et y gère la création et lecture des colonnes, lignes et données
       8. **importation: PRAsimul.py** -> crée la la feuille de calcul "PRAsimul" et y gère la création et lecture des colonnes et données
       9. **importation: step2.py**
@@ -49,7 +49,7 @@ VegAu se compose de trois parties:
    3. `ASSESS_Water()`: On vérifie que les** besoins en eau** de la culture sont couverts par les précipitations;
    4. `ASSESS_pH()`: On vérifie que le** pH du sol** est bien compris dans la fenêtre de pH supportée par la culture.
    5.`ASSESS_PRAedibility()`:  **Synthèse des tests précédents** pour aboutir à un dictionnaire de cultures qui répondent à tous ces critères pour la PRA courante.
-2. `PriorityAssessement()`: Calcul d'**indices "d''adaptabilité" et de priorité** devant **aider au choix des cultures** lors de l'élaboration de la **rotation**. Cette fonction fait partie du "step1(.py)"
+2. `ASSESS_Priority()`: Calcul d'**indices "d''adaptabilité" et de priorité** devant **aider au choix des cultures** lors de l'élaboration de la **rotation**. Cette fonction fait partie du "step1(.py)"
 3. **Étape 2** : `PRArotation()`. Élaboration d'une **rotation culturale jusqu'à épuisement des ressources du sol**: si plus aucune culture ne peut pousser par manque d'éléments nutritifs, la rotation est terminée. **Pour chaque test** précédent le choix de la culture suivante, on calcule un** indice compris entre 0 et 1 pour estimer la qualité de la ressource** par rapport aux exigences de la plante (plus l'indice est haut, meilleure est la ressource/condition climatique).
    1. `FindOptimalSeedingDate()`: On cherche la **période de plantation idéale** pour chaque culture pouvant être plantée le plus tôt possible après la culture précédente (pour la première culture, le mois de départ est fixé à mars)
    2. `ASSESS_OptimalWaterRessources()`: On vérifie que la culture pourra recevoir **assez d'eau** si elle est plantée à la date déterminée en 3.1..

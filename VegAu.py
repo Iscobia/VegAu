@@ -104,100 +104,100 @@ def MDL_EdibilityTest(x, data):
 	The import of this sheet is ensured by the module 'importingODS.py'
 	"""
 
-	country		    =	sorted(data.environment.keys())
-	database	    =	sorted(data.plants.keys())
+	country		    =	[pra for pra in sorted(data.environment.keys()) if pra != 'headers_full' and pra != 'headers_ID']
+	database	    =	[crop for crop in sorted(data.plants.keys()) if crop != 'headers_full' and crop != 'IDXinit' and crop != 'headers_ID']
 
 	#===========================================================================
 	#===========================================================================
 
 	for PRA in country:
-		if PRA != 'headers_full' and PRA != 'headers_ID':
-			# =======================================================================================================================================
-			# creating new edibility lists for the current PRA
-			x.edibleCropsID[PRA] = []
-			x.edibleCropsEN[PRA] = []
-			x.edibleCropsFR[PRA] = []
-			x.edibleCropsDE[PRA] = []
-			x.ActualStand[PRA] = {"N": nmin_med(PRA), "P": P_med(PRA), "K": K_med(PRA), "Na": nao_med(PRA),
-								  "Mg": mgo_med(PRA), "Ca": cao_med(PRA), "Mn": mned_med(PRA), "Fe": feed_med(PRA),
-								  "Cu": cued_med(PRA), "OM": corgox_med(PRA)}
-			print("Edibility assessment for the PRA {}...".format(IDPRA(PRA)))
+
+		# =======================================================================================================================================
+		# creating new edibility lists for the current PRA
+		x.edibleCropsID[PRA] = []
+		x.edibleCropsEN[PRA] = []
+		x.edibleCropsFR[PRA] = []
+		x.edibleCropsDE[PRA] = []
+		x.ActualStand[PRA] = {"N": nmin_med(PRA), "P": P_med(PRA), "K": K_med(PRA), "Na": nao_med(PRA),
+							  "Mg": mgo_med(PRA), "Ca": cao_med(PRA), "Mn": mned_med(PRA), "Fe": feed_med(PRA),
+							  "Cu": cued_med(PRA), "OM": corgox_med(PRA)}
+		print("Edibility assessment for the PRA {}...".format(IDPRA(PRA)))
 
 
-			for crop in database:
-				if crop != 'headers_full' and crop != 'IDXinit' and crop != 'headers_ID':
-					#print("""--------------------------
-					#The current crop is :""", crop)
+		for crop in database:
 
-					#=======================================================================================================================================
-					# assessment functions
-					x.all_crop_parameters_match_the_PRA_ones = True
+			#print("""--------------------------
+			#The current crop is :""", crop)
+
+			#=======================================================================================================================================
+			# assessment functions
+			x.all_crop_parameters_match_the_PRA_ones = True
 
 
-					while x.all_crop_parameters_match_the_PRA_ones :
+			while x.all_crop_parameters_match_the_PRA_ones :
 
-						x.all_crop_parameters_match_the_PRA_ones = True
-						the_selected_crop_is_a_permanent_crop = prodCAT(crop) == 1 or prodCAT(
-							crop) == 2  # fruit/nut tree (1), shrub (2)
+				x.all_crop_parameters_match_the_PRA_ones = True
+				the_selected_crop_is_a_permanent_crop = prodCAT(crop) == 1 or prodCAT(
+					crop) == 2  # fruit/nut tree (1), shrub (2)
 
-						try :
+				try :
 
-							if the_selected_crop_is_a_permanent_crop:
-								ASSESS_Tmin_germ_forFruits(x, crop, PRA)
-							else:
-								ASSESS_Tmin( crop, x, PRA)
-							assert x.all_crop_parameters_match_the_PRA_ones
+					if the_selected_crop_is_a_permanent_crop:
+						ASSESS_Tmin_germ_forFruits(x, crop, PRA)
+					else:
+						ASSESS_Tmin( crop, x, PRA)
+					assert x.all_crop_parameters_match_the_PRA_ones
 
-							#------------------------------------------------------
+					#------------------------------------------------------
 
-							ASSESS_sunshine(crop, PRA, x)
-							assert x.all_crop_parameters_match_the_PRA_ones
+					ASSESS_Sunshine(crop, PRA, x)
+					assert x.all_crop_parameters_match_the_PRA_ones
 
-							# ------------------------------------------------------
+					# ------------------------------------------------------
 
-							# print("x.all_crop_parameters_match_the_PRA_ones = ",  x.all_crop_parameters_match_the_PRA_ones)
-							assert x.all_crop_parameters_match_the_PRA_ones
+					# print("x.all_crop_parameters_match_the_PRA_ones = ",  x.all_crop_parameters_match_the_PRA_ones)
+					assert x.all_crop_parameters_match_the_PRA_ones
 
-							# ------------------------------------------------------
+					# ------------------------------------------------------
 
-							ASSESS_Water( crop, PRA, x)
-							# print("x.all_crop_parameters_match_the_PRA_ones = ",  x.all_crop_parameters_match_the_PRA_ones)
-							assert x.all_crop_parameters_match_the_PRA_ones
+					ASSESS_Water( crop, PRA, x)
+					# print("x.all_crop_parameters_match_the_PRA_ones = ",  x.all_crop_parameters_match_the_PRA_ones)
+					assert x.all_crop_parameters_match_the_PRA_ones
 
-							# ------------------------------------------------------
+					# ------------------------------------------------------
 
-							ASSESS_pH(crop, PRA, x)
+					ASSESS_pH(crop, PRA, x)
 
-						except ValueError : # if there is a missing variable in the database
-							pass
-						except AssertionError:
-							break
+				except ValueError : # if there is a missing variable in the database
+					pass
+				except AssertionError:
+					break
 
-						# print("""This crop is edible for the current PRA ! :D""")	# if the code runs till this line, the crop is edible
-																					# because x.all_crop_parameters_match_the_PRA_ones == True
-						# print("prodID(crop) = ", prodID(crop), "========== prod_EN(crop) = ", prod_EN(crop))
-						x.edibleCropsID[PRA].append(prodID(crop))
-						x.edibleCropsEN[PRA].append(prod_EN(crop))
-						x.edibleCropsFR[PRA].append(prod_FR(crop))
-						x.edibleCropsDE[PRA].append(prod_DE(crop))
+				# print("""This crop is edible for the current PRA ! :D""")	# if the code runs till this line, the crop is edible
+																			# because x.all_crop_parameters_match_the_PRA_ones == True
+				# print("prodID(crop) = ", prodID(crop), "========== prod_EN(crop) = ", prod_EN(crop))
+				x.edibleCropsID[PRA].append(prodID(crop))
+				x.edibleCropsEN[PRA].append(prod_EN(crop))
+				x.edibleCropsFR[PRA].append(prod_FR(crop))
+				x.edibleCropsDE[PRA].append(prod_DE(crop))
 
-						# print("Adding the PRA's surface to the 'prodSURFACE' dictionary...")
-						if crop not in x.prodSURFACE.keys():
-							x.prodSURFACE[crop] = 0
-						x.prodSURFACE[crop] += PRAsurface(PRA)
-						# print("	OK")
-						# End of the edibility assessment for the current crop --> the loop's boolean is set to False :
-						x.all_crop_parameters_match_the_PRA_ones = False
+				# print("Adding the PRA's surface to the 'prodSURFACE' dictionary...")
+				if crop not in x.prodSURFACE.keys():
+					x.prodSURFACE[crop] = 0
+				x.prodSURFACE[crop] += PRAsurface(PRA)
+				# print("	OK")
+				# End of the edibility assessment for the current crop --> the loop's boolean is set to False :
+				x.all_crop_parameters_match_the_PRA_ones = False
 
-						# print("x.all_crop_parameters_match_the_PRA_ones = ", x.all_crop_parameters_match_the_PRA_ones)
+				# print("x.all_crop_parameters_match_the_PRA_ones = ", x.all_crop_parameters_match_the_PRA_ones)
 
-						# END while (x.all_crop_parameters_match_the_PRA_ones)
+				# END while (x.all_crop_parameters_match_the_PRA_ones)
 
-					#END for (crop in database)
+			#END for (crop in database)
 
-			print( "[{}]	There are {} edible crops for this PRA : {}.".format(PRA, len(x.edibleCropsID[PRA]), x.edibleCropsEN[PRA]) )
+		print( "[{}]	There are {} edible crops for this PRA : {}.".format(PRA, len(x.edibleCropsID[PRA]), x.edibleCropsEN[PRA]) )
 
-			#END for (pra in country)
+		#END for (pra in country)
 
 	#=====================================================================================
 	#== EXPORTING THE RESULTS OF THIS FIRST PART =========================================
@@ -261,7 +261,7 @@ def MDL_EdibilityTest(x, data):
 
 	#=====================================================================================
 
-	PriorityAssessement(x, data)# assessing the priority indexes for each crop (PRIORITYgeneral(crop), PRIORITYfruits(crop), PRIORITYtextiles)
+	ASSESS_Priority(x, data)# assessing the priority indexes for each crop (PRIORITYgeneral(crop), PRIORITYfruits(crop), PRIORITYtextiles)
 	# needs the x.prodSURFACE value to be copied in PRAedibility (cf previous function)
 		
 
@@ -316,7 +316,8 @@ def MDL_Rotation(x, data):
 		x.EndPreviousCrop_earlier = 3  # simulation begins in March
 		x.EndPreviousCrop_later = 3  # simulation begins in March
 		x.decomposition_month = {}
-		x.edibleCrops = list(x.edibleCropsID[PRA])
+		x.edibleCrops = [c for c in x.edibleCropsID[PRA] if c != 'RBRB' and c != 'CC_GRASSorchard']
+		x.edibleCompanionCrops = []
 		x.rotat[PRA] = [] # each tuple of 'rotat' gives the name of a crop with the last month of its Growing Season in the rotation
 		x.indexWR	= {}	# dictionary that will assign each crop index to a Water Resources assessment index
 		x.indexPnD	= {}	# dictionary that will assign each crop index to a Pest and Diseases assessment index
@@ -324,13 +325,14 @@ def MDL_Rotation(x, data):
 
 		x.LimitingFactor[PRA] = []
 		x.VERIFprodBOT = {}
-		x.PestsDiseases_in_rotation = {}	# dictionary that will assign each crop index to x.YIELD depreciating index if it is  subject to Pest and Diseases risks.
+		x.PestsDiseases_in_rotation = {}	# dictionary that will assign each crop index to YIELD depreciating index if it is  subject to Pest and Diseases risks.
 
 
 		x.ActualStand[PRA] = {"N": nmin_med(PRA), "P": P_med(PRA), "K": K_med(PRA), "Na": nao_med(PRA), "Mg": mgo_med(PRA), "Ca": cao_med(PRA), "Mn": mned_med(PRA), "Fe": feed_med(PRA), "Cu": cued_med(PRA), "OM": corgox_med(PRA)}
 		x.totalYields[PRA] = {}
 		x.LimitingFactorReached = False
 		x.no_delay_because_of_T_or_water = True
+		the_selected_crop_is_a_permanent_crop = False
 
 		#=========================================================================
 		#= Preparing the dict x.decomposion_month :
@@ -344,10 +346,6 @@ def MDL_Rotation(x, data):
 
 			i += 1
 
-		#=========================================================================
-
-		the_selected_crop_is_a_permanent_crop = False
-		x.edibleCompanionCrops	= []
 
 		# =========================================================================
 		# =========================================================================
@@ -373,28 +371,20 @@ def MDL_Rotation(x, data):
 							# ---> assert x.EndPreviousCrop_Later >= 120 after the UPDATE function
 							# The while loop seemed not to be enough...
 
-						if x.PreviouslySelectedCrop != None :
-							the_selected_crop_is_a_permanent_crop = prodCAT(x.PreviouslySelectedCrop) == 1 or prodCAT(x.PreviouslySelectedCrop) == 2 # fruit/nut tree, shrub
-						else:
-							pass
-						# except KeyError:  # if there is no "Previously Selected Crop", VegAu has to proceed with the rotation simulation
 
-						# =======================================================================================================
-						# =======================================================================================================
+						if x.SelectedCrop != None:
+							the_selected_crop_is_a_permanent_crop = prodCAT(x.SelectedCrop) == 1 or prodCAT(
+								x.SelectedCrop) == 2  # fruit/nut tree, shrub
 
 						if the_selected_crop_is_a_permanent_crop:
 
 							print("[{}][{}]	The Selected Crop is a permanent crop. Assessing crop impacts for the Current year (first month of the growing season = {})...".format(PRA, x.EndPreviousCrop_later, MonthID(x.GSstart)))
 
-							#~ CROProw = CROProw_PLANTS(x.SelectedCrop)
-							#~ CROPcol = CROPcol_PRAedibility(x.SelectedCrop)
-							#~ CROPcol_yields = CROPcol_PRAyields(x.SelectedCrop)
-
 							###########################
 							# Assess Companion Crop ? #
 							###########################
 
-							x.edibleCrops=[x.PreviouslySelectedCrop]
+							x.edibleCrops=[x.SelectedCrop]
 
 							print("[{}][{}]	Simulating the Nutrients gain and removal...".format(PRA, x.EndPreviousCrop_later))
 							ASSESS_Nutrients(x, PRA)
@@ -425,12 +415,6 @@ def MDL_Rotation(x, data):
 						# =======================================================================================================
 
 						else:
-							# For the moment, excluding rhubarb (kind of permanent crop)
-							x.edibleCrops = [c for c in x.edibleCropsID[PRA] if c != 'RBRB']
-
-							x.edibleCrops = [c for c in x.edibleCrops if c != 'CC-GRASSorchard'] # excluding orchard grass from edible crops
-							x.GSstart = {} # key = prodID, value = first month of the potential growing season
-
 							print("[{}][{}]	Looking for the Optimal Seeding Date... (edible crops are : {})".format(PRA, x.EndPreviousCrop_later, x.edibleCrops))
 
 							# selecting the crops according to their planting date:
@@ -499,13 +483,6 @@ def MDL_Rotation(x, data):
 															# /!\ CAUTION: if there is a x.SelectedCC, SelectedCC_Kill(PRA, x) modifies 'ActualStand' !
 															#		----> SelectedCC_Kill(PRA, x) must run BEFORE SelectedCrop_Harvest(PRA, x) !!
 
-
-									UPDATE_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x)
-									# This function creates an entry in x.VERIFprodBOT for the newly selected crop if there is no one in the dictionary
-									# and verifies if the minimum return period is respected.
-									# 		* If respected : no Pest and Diseases malus
-									# 		* If not respected : +1 for this crop in the dict 'PestsDiseases_in_rotation'.
-									# In both cases, the 'Duration since previous crop' returns to 0 (because it is yet the 'previous crop' for the potential next ones).()
 
 
 									#Saving the x.SelectedCrop as "Previously Selected Crop" for the next loop:
@@ -582,8 +559,8 @@ def MDL_Rotation(x, data):
 				print("""
 [{}][{}]	END OF THE ROTATION : An error has been raised, the while loop is broken ("break")
 
-			    	{} different crops out of {} succeeded until {}: {}
-			    								""".format(PRA, x.EndPreviousCrop_later, len(list(set(rotation_crops))),
+					{} different crops out of {} succeeded until {}: {}
+												""".format(PRA, x.EndPreviousCrop_later, len(list(set(rotation_crops))),
 														   len(rotation_crops), MonthID(x.EndPreviousCrop_later),
 														   rotation_crops))
 
@@ -628,17 +605,19 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 	print("""===================== STEP 1 =====================
 	Assessing edible Crops for each PRA according to Environmental (Climate and Soil) Data and Biological Data""")
 
-	# MDL_EdibilityTest(x, data) # complete function
+	MDL_EdibilityTest(x, data) # complete function
 
-	#----------------------------
-	#-- Function for test
-	x.edibleCropsID = CropRepartition_ID
-	x.edibleCropsEN = CropRepartition_EN
-	x.edibleCropsFR = CropRepartition_FR
-	x.edibleCropsDE = CropRepartition_DE
-	x.prodSURFACE = prodSURFACE
+	#---------------------------------------------------------------------------------------
+	#-- FOR TESTS
+	# x.edibleCropsID = CropRepartition_ID
+	# x.edibleCropsEN = CropRepartition_EN
+	# x.edibleCropsFR = CropRepartition_FR
+	# x.edibleCropsDE = CropRepartition_DE
+	# x.prodSURFACE = prodSURFACE
+	#
+	# ASSESS_Priority(x, data)
 
-	PriorityAssessement(x, data)
+	# ---------------------------------------------------------------------------------------
 
 	print("""
 				===================== STEP 2 =====================

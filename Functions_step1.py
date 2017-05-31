@@ -274,7 +274,6 @@ def ASSESS_Tmin(crop, x, PRA):
 	if x.edible_Tmin[-1] == True:
 		PRAedibTest.append(count)
 
-	# print("x.edible_Tmin = ", x.edible_Tmin, "GSmin(crop) = ", GSmin(crop), "PRAedibTest = ", PRAedibTest)
 	# --------------------------------------
 
 	if max(PRAedibTest) < GSmin(crop):
@@ -282,7 +281,7 @@ def ASSESS_Tmin(crop, x, PRA):
 
 # ================================================================================================================
 
-def ASSESS_sunshine(crop, PRA, x):
+def ASSESS_Sunshine(crop, PRA, x):
 	"""INPUT:
 	*	x		is the class that contains all self variables used in all VegAu's functions
 	*	crop 	is the ID of a current crop. It allows to call the related data in the 'plants' dictionary.
@@ -293,7 +292,7 @@ def ASSESS_sunshine(crop, PRA, x):
 	of citrus, melons and other exotics trees and thus avoids some aberrations like melons and citrus in the
 	northern, couldy regions !"""
 
-	x.edibleSunshine = []
+	edible_Sunshine = []
 	crop_needs_sun = 'CTR' in crop or 'EXOT' in crop or 'MLN' in crop
 
 	#-----------------------------------------------------------------
@@ -306,13 +305,13 @@ def ASSESS_sunshine(crop, PRA, x):
 
 		if crop_needs_sun:
 			if not enough_sunshine:
-				x.edibleSunshine.append(False)
+				edible_Sunshine.append(False)
 				x.all_crop_parameters_match_the_PRA_ones = False
 				break
 			else :
-				x.edibleSunshine.append(True)
+				edible_Sunshine.append(True)
 		else:
-			x.edibleSunshine.append(True)
+			edible_Sunshine.append(True)
 
 		GrowingMonth += 1
 		CurrentMonth += 1
@@ -431,7 +430,6 @@ def ASSESS_Water(crop, PRA, x):
 		if edible_WaterRqt[-1] == True:
 			PRAedibTest.append(count)
 
-		# print("edible_WaterRqt = ", edible_WaterRqt, "GSmin(crop) = ", GSmin(crop), "PRAedibTest = ", PRAedibTest)
 		# --------------------------------------
 
 		if max(PRAedibTest) < GSmin(crop):
@@ -441,7 +439,6 @@ def ASSESS_Water(crop, PRA, x):
 	#== IF THE CURRENT CROP IS NOT A TREE OR A SHRUB =====================================
 
 	else:
-		# print("x.edible_Tmin = ", x.edible_Tmin)
 		PRAedibTest = []
 		count = 0
 
@@ -496,7 +493,7 @@ def ASSESS_pH(crop, PRA, x):
 #================================================================================================================
 
 
-def PriorityAssessement(x, data):
+def ASSESS_Priority(x, data):
 	"""INPUT:
 	*	x		is the class that contains all self variables used in all VegAu's functions
 	*	data	is the class that contains the original 'plants' and 'environment' data bases
@@ -593,8 +590,8 @@ def PriorityAssessement(x, data):
 					#END if (priority general acc. to ratioADAPT
 
 
-					# 'PRIORITYfruits' assessment :
-					if prodTYP(crop) is 'Fruit tree':
+					# 'PRIORITYfruits' assessment for trees and shrubs:
+					if prodCAT(crop) == 1 or prodCAT == 2:
 						if QttPerInhabitant < 1:
 							data.plants[crop]['PRIORITYfruits'] = 1
 
@@ -674,7 +671,6 @@ def PriorityAssessement(x, data):
 					data.plants[crop]['PRIORITYfruits']	= 0 # not a fruit/nut tree
 					data.plants[crop]['PRIORITYtextile'] = 0 # not a textile
 
-				# print("{} ({}) : 'ratio of adaptability' = {}, 'PRIORITYgeneral' = {}, 'PRIORITYfruits' = {}, 'PRIORITYtextile' = {}".format(prod_EN(crop), crop, data.plants[crop]['ratioADAPT'], data.plants[crop]['PRIORITYgeneral'], data.plants[crop]['PRIORITYfruits'], data.plants[crop]['PRIORITYtextile']))
 
 				print("""		Priority Assessment  [OK]
 				""")
