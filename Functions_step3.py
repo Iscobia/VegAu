@@ -67,6 +67,7 @@ def MDL_QTTperPERSON(x, nutrition):
 	# --> Summing the nutrients and vitamins of all products in the appropriate variables (1 variable per nutritional feature)
 	# of the dictionary 'TotalNutrients' (each key corresponds to a nutrient, vitamin or other dietetic feature)
 
+	x.totalYields = x.totalYields["TOTAL"]
 
 	x.DailyResources = {}
 	totalPopulation = 64859599
@@ -90,7 +91,7 @@ def MDL_QTTperPERSON(x, nutrition):
 			'Zn'	:	Zinc(crop),
 			'Se'	:	Selenium(crop),
 			'I'		:	Iode(crop),
-			'Proteins'		:	Proteines(crop),  # "protéines brutes" (in the Ciqual table)
+			'Proteins'		:	Proteins(crop),  # "protéines brutes" (in the Ciqual table)
 			'carbohydrates'	:	Glucides(crop), # "Glucides" in the Cequal table
 			'sugar'			:	Sucres(crop),
 			'energy_kJ'		:	energie_kJ(crop), # calculated according to the "Réglement UE Né 1169/2011"'	:	do not take fibres into account

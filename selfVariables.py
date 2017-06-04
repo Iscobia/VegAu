@@ -91,6 +91,7 @@ class x:
 
 	# Limiting Factors (lack of nutrients, pests and diseases)
 	LimitingFactor = {}
+	LimitingFactor_crops = {}
 	PestsDiseases_in_rotation = {}
 	VERIFprodBOT = {}
 	rotation_length = {}

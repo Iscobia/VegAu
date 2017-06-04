@@ -289,31 +289,29 @@ def mineralizedCPK(crop, month):
 	the OM amount returned to the soil after decomposition
 	"""
 	from math import exp
-	
-	t = month*30.5 # this function requires days
-	R	=	CN(crop)
-	a	=	15.4
-	b	=	76
-	#----------------------------------------------------------------
-	Rb	=	a - b/R 	# C:N of zymogeneous bacterial biomass (g/g)
+
+	t = month * 30.5  # this function requires days
+	R = CN(crop)
+	a = 15.4
+	b = 76
+	# ----------------------------------------------------------------
+	Rb = a - b / R  # C:N of zymogeneous bacterial biomass (g/g)
 	Rbmin = 7.8
 	if Rb < Rbmin:
 		Rb = Rbmin
-	#----------------------------------------------------------------
-	c	=	0.098
-	d	=	1.94
-	e	=	0.73
-	f	=	10.2
-	h	=	1 - (e*R) / ( f + R) 	# humification rate of microbial biomass (ndays^-1)
-	k = c + d / R					# decomposition rate of plant residues (ndays^-1), value from the article
+	# ----------------------------------------------------------------
+	c = 0.07
+	d = 1.94
+	e = 0.73
+	f = 10.2
+	h = 1 - (e * R) / (f + R)  # humification rate of microbial biomass (ndays^-1)
+	k = c + (d / R)  # decomposition rate of plant residues (ndays^-1), value from the article
 	# k	=	c + d/R	* 0.98 * 0.74	# decomposition rate of plant residues (ndays^-1), value from the table
-	λ	=	0.0076
-	Y0	=	0.62		# Assimilation yield residue-C by microbial biomass (g/g)
-	Y	=	Y0
+	λ = 0.0076
+	Y0 = 0.62  # Assimilation yield residue-C by microbial biomass (g/g)
+	Y = Y0
 
-	# RESULTS DO NOT CORRESPOND WITH THE ONES OF THE ARTICLE !!! TO TAKE THE ABSOLUTE VALUE IS ONLY A WORKAROUND !!!
-
-	return abs(    (1 - Y*h - (1 + (Y*(k - λ*h)/(λ - k)) *exp(-k*t) + ( (k*Y*(1 - h)/(λ - k))*exp(-λ*t) ) ))   )
+	return (1 - Y * h - (1 + (Y * (k - λ * h) / (λ - k))) * exp(-k * t) + ((k * Y * (1 - h) / (λ - k)) * exp(-λ * t)))
 
 
 #================================================================================================================
@@ -333,36 +331,38 @@ def mineralizedN(crop, month):
 	"""
 	from math import exp
 
-	t	=	month * 30.5 # this function requires days
-	R	=	CN(crop)
-	a	=	15.4
-	b	=	76
-	Rb	=	a + b/R 	# C:N of zymogeneous bacterial biomass (g/g)
-	Rbmin = 7.8
-	if Rb < Rbmin :
-		Rb = Rmin
+	# t	=	month * 30.5 # this function requires days
+	# R	=	CN(crop)
+	# a	=	15.4
+	# b	=	76
+	# Rb	=	a + b/R 	# C:N of zymogeneous bacterial biomass (g/g)
+	# Rbmin = 7.8
+	# if Rb < Rbmin :
+	# 	Rb = Rmin
+	#
+	# c	=	0.098
+	# d	=	1.94
+	# e	=	0.73
+	# f	=	10.2
+	# h	=	1 - (e*R) / ( f + R) # humification rate of microbial biomass (ndays^-1)
+	# k	=	c + d/R	* 0.98 * 0.74	# decomposition rate of plant residues (ndays^-1)
+	# λ	=	0.0076
+	#
+	# Y0	=	0.62	# Assimilation yield residue-C by microbial biomass (g/g)
+	# Y	=	Y0
+	# CN_humus	=	9.5
+	# Wr	=	1/R			# N:C ratio of the plant residues
+	# Wb	=	1/Rb		# N:C ratio of the newly formed microbial biomass
+	# Wh	=	1/CN_humus		# N:C ratio of the newly formed humified organic matter
+	# alpha	=	1 - Wh/Wr * Y * h
+	# beta	=	1- (k * Wb - λ * h * Wh) * Y/Wr / (k-λ)
+	# gamma	=	k * Y * (Wb - h * Wh) / Wr / (k - λ)
 
-	c	=	0.098
-	d	=	1.94
-	e	=	0.73
-	f	=	10.2
-	h	=	1 - (e*R) / ( f + R) # humification rate of microbial biomass (ndays^-1)
-	k	=	c + d/R	* 0.98 * 0.74	# decomposition rate of plant residues (ndays^-1)
-	λ	=	0.0076
-
-	Y0	=	0.62	# Assimilation yield residue-C by microbial biomass (g/g)
-	Y	=	Y0
-	CN_humus	=	9.5
-	Wr	=	1/R			# N:C ratio of the plant residues
-	Wb	=	1/Rb		# N:C ratio of the newly formed microbial biomass
-	Wh	=	1/CN_humus		# N:C ratio of the newly formed humified organic matter
-	alpha	=	1 - Wh/Wr * Y * h
-	beta	=	1- (k * Wb - λ * h * Wh) * Y/Wr / (k-λ)
-	gamma	=	k * Y * (Wb - h * Wh) / Wr / (k - λ)
-	
-	return (1 - exp(-k * t) - ((Wb * k * Y)/(Wr *( λ - k))) * (exp(-k * t)) - ((Wh * Y * h)/(Wr * (λ - k)))* (exp(-λ*t) - λ * exp(-k*t)) - (Wh/Wr)*Y*h )
+	# return (1 - exp(-k * t) - ((Wb * k * Y)/(Wr *( λ - k))) * (exp(-k * t)) - ((Wh * Y * h)/(Wr * (λ - k)))* (exp(-λ*t) - λ * exp(-k*t)) - (Wh/Wr)*Y*h )
 	# return (alpha - beta	* exp(-k*t)- gamma * exp(-λ*t) )
 
+	# TEMPORARY workaround :
+	return mineralizedCPK(crop, month)
 
 
 #================================================================================================================
@@ -390,94 +390,167 @@ def VERIF_TreesInRegion(PRA, x, data):
 	x.SelectedCrop = crop
 	"""
 
-	PRA_in_region = [pra for pra in environment if (CODE_REG(pra) == CODE_REG(PRA) and pra != PRA)]
+	print("			Verifying if there are permanent crops for this PRA...")
+	# representativity limit for permanent crops
+	MaxPermaCrops = round((0.1 * len([pra for pra in environment if pra != 'headers_full' and pra != 'headers_ID']) / len([c for c in plants if prodCAT(c) == 1 or prodCAT(c) == 2]) ))
+
+	PRA_in_region = [pra for pra in environment if pra in x.results and (CODE_REG(pra) == CODE_REG(PRA) and pra != PRA)]
+	PRA_in_dept = [pra for pra in environment if pra in x.results and (CODE_DEPT(pra) == CODE_DEPT(PRA) and pra != PRA)]
 
 	crops_in_region = []
-	if len(x.results) > 1 :
-		for pra in x.results :
-			if pra in PRA_in_region:
+	crops_in_dept   = []
+	for pra in PRA_in_region :
+		if pra in x.results:
+			if x.results[pra][6] != '':
 				crops_in_region.append(x.results[pra][6])
+				if pra in PRA_in_dept:
+					crops_in_dept.append(x.results[pra][6])
 
-	permanent_crops_in_PRA = [c for c in x.edibleCrops if (prodCAT(c) == 1 or prodCAT(c) == 2)]
-	fruits_in_PRA = [c for c in permanent_crops_in_PRA if ('FRT' in c or 'EXOT' in c)]
-	nuts_in_PRA = [c for c in permanent_crops_in_PRA if 'NUT' in c]
-	berries_in_PRA = [c for c in permanent_crops_in_PRA if 'BERRY' in c]
-	other_trees_in_PRA = [c for c in permanent_crops_in_PRA if c not in fruits_in_PRA and c not in nuts_in_PRA and c not in berries_in_PRA]
-	permanent_crops_in_PRA = [fruits_in_PRA, nuts_in_PRA, berries_in_PRA, other_trees_in_PRA]
 
-	if permanent_crops_in_PRA != []:
-	# if there is a permanent crop in the edible crops list for this PRA :
-		for CropType in permanent_crops_in_PRA :
-		# first fruits and exotic trees, then nuts and finally berries:
+	if len([c for c in crops_in_dept if prodCAT(c) == 1 or prodCAT(c) == 2]) <= 2:
+	# if there are already 2 permanent crops in the departement, we give priority to changing crops. Else:
 
-			if CropType != [] :
+		permanent_crops_in_PRA = [c for c in x.edibleCrops if (prodCAT(c) == 1 or prodCAT(c) == 2)]
+		fruits_in_PRA = [c for c in permanent_crops_in_PRA if ('FRT' in c or 'EXOT' in c)]
+		nuts_in_PRA = [c for c in permanent_crops_in_PRA if 'NUT' in c]
+		berries_in_PRA = [c for c in permanent_crops_in_PRA if 'BERRY' in c]
+		other_trees_in_PRA = [c for c in permanent_crops_in_PRA if (c not in fruits_in_PRA and c not in nuts_in_PRA and c not in berries_in_PRA)]
 
-				if len(CropType) == 1 :
-					if CropType != fruits_in_PRA and CropType != nuts_in_PRA :
-						if CropType[0] not in crops_in_region:
-							x.SelectedCrop = CropType[0]
-							x.CHOICE[PRA].append(('Permanent crop (not in region)',len(CropType)))
-							break
-					else :
-						x.SelectedCrop = CropType[0]
-						x.CHOICE[PRA].append(('Permanent crop (fruits, nuts)', len(CropType)))
-						break
+		#-------------------------------------------------------------------------------------------------------------------
+		# Olive trees have twice more chance to appear in a region because olives can be green or mature:
+		# if there is already an "olive-PRA" in the region, olives are rejected for this one.
+		if [c for c in crops_in_region if 'OLV' in c] != [] and [c for c in other_trees_in_PRA if 'OLV' in c] != []:
+			other_trees_in_PRA = [c for c in other_trees_in_PRA if 'OLV' not in c]
+		# ------------------------------------------------------------------------------------------------------------------
 
-				else :
+		permanent_crops_in_PRA = [fruits_in_PRA, nuts_in_PRA, berries_in_PRA, other_trees_in_PRA]
 
-					PRIORITYgeneral = lambda crop: data.plants[crop]['PRIORITYgeneral']
-					PRIORITYfruits = lambda crop: data.plants[crop]['PRIORITYfruits']
+		if permanent_crops_in_PRA != []:
+		# if there is a permanent crop in the edible crops list for this PRA :
+			for CropType in permanent_crops_in_PRA :
+			# first fruits and exotic trees, then nuts and finally berries:
 
-					# considering only crops with the lower (better) priority index, so the lower potential edibility :
-					crops_priority = [PRIORITYgeneral(c) for c in CropType]
-					CropType = [c for c in CropType if PRIORITYgeneral(c) == min(crops_priority)]
+				if CropType != [] :
 
-					if min(crops_priority) == 1 :
-					# if selected crops have a very low potential occurence in the country, we don't care if
-					# they are already in the region or not :
-						crops_representativity = [x.representativity[c] for c in CropType]
+					if len(CropType) == 1 :
+						if CropType[0] in x.representativity:
+						# if the crop is already represented in the country, verifying if it has not been chosen too often:
+							if x.representativity[CropType[0]] < MaxPermaCrops:
+								if CropType[0] not in crops_in_region:
+									x.SelectedCrop = CropType[0]
+									x.CHOICE[PRA].append(('Permanent crop (not in region, already in country)',len(CropType)))
+									break
 
-						# The selected crop is the one with the lower representativity :
-						x.SelectedCrop = [c for c in CropType if x.representativity[c] == min(crops_representativity)][
-							0]
-
-					elif [c for c in CropType if c not in crops_in_region] != []:
-					# if selected crops have a good potential occurence and if some of them are still not used in the region:
-
-						CropType = [c for c in CropType if c not in crops_in_region]
-						both_CropType_AND_representativity = [c for c in CropType if c in x.representativity]
-						crops_representativity = [x.representativity[c] for c in both_CropType_AND_representativity]
-
-						#=======================================================================================
-						#AVOIDING DOUBLE OLIVE TREES IN REGIONS (mature and green)
-
-						olives_already_in_region = [c for c in crops_in_region if 'OLV' in c] != []
-						only_olives_are_available = [c for c in CropType if 'OLV' not in c] == []
-
-						if olives_already_in_region and only_olives_are_available:
-							break
+								elif data.plants[CropType[0]]['ratioADAPT'] < 0.15  :
+								# if the only edible permanent crop has an adaptation ratio lower than 15%, we chose it. Else, it is rejected.
+									x.SelectedCrop = CropType[0]
+									x.CHOICE[PRA].append(('Permanent crop (fruits, nuts)', len(CropType)))
+									break
 
 						else:
-							# =======================================================================================
-							if len(both_CropType_AND_representativity) == len(CropType) :
-							# if all crops have already been used
-								# The selected crop is the one with the lower representativity :
-								x.SelectedCrop = [c for c in both_CropType_AND_representativity if x.representativity[c] == min(crops_representativity)][0]
-								x.CHOICE[PRA].append(('Permanent crop (not in region, already in country)', len(CropType)))
+						# if the crops has still never been chosen in the whole country :
+							x.SelectedCrop = CropType[0]
+							x.CHOICE[PRA].append(('Permanent crop (not in region)', len(CropType)))
+							break
+
+					else :
+
+						PRIORITYgeneral = lambda crop: data.plants[crop]['PRIORITYgeneral']
+						PRIORITYfruits = lambda crop: data.plants[crop]['PRIORITYfruits']
+
+						# considering only crops with the lower (better) priority index, so the lower potential edibility :
+						crops_priority = [PRIORITYgeneral(c) for c in CropType]
+						CropType = [c for c in CropType if PRIORITYgeneral(c) == min(crops_priority)]
+						unusedPermanentCrops = [c for c in CropType if c not in x.representativity]
+
+						if min(crops_priority) == 1 :
+						# if selected crops have a very low potential occurence in the country, we don't care if
+						# they are already in the region or not :
+
+							if unusedPermanentCrops != []:
+							# if there are permanent trees that have not been used until now :
+
+								if len(unusedPermanentCrops) == 1 :
+									x.SelectedCrop = unusedPermanentCrops[0]
+									x.CHOICE[PRA].append(('Permanent crop (not in country)', len(CropType)))
+
+								else:
+									#If there are several unused crops, we chose a crop according to the quality of the local
+									# water resources and the potential occurence of the crop in the country
+									priority = [( x.indexWR[c] * (1 - data.plants[c]['ratioADAPT']) )/2  for c in unusedPermanentCrops]
+									x.SelectedCrop = [c for c in unusedPermanentCrops if (x.indexWR[c] * (1 - data.plants[c]['ratioADAPT']) )/2 == max(priority)][0]
+									x.CHOICE[PRA].append(('Permanent crop (not in country, greater rarity and water indexes)', len(CropType)))
+
+							#---------------------------------------------------------------------------------------
+
+							else:
+							# if every crop are in x.representativity (if they have all been used once in the country)
+
+								if [ c for c in x.representativity if ( c in CropType and x.representativity[c] < MaxPermaCrops )] != []:
+									CropType = [ c for c in x.representativity if ( c in CropType and x.representativity[c] < MaxPermaCrops )]
+									crops_representativity = [x.representativity[c] for c in CropType]
+									# The selected crop is the one with the lower representativity :
+									if min(crops_representativity) < MaxPermaCrops:
+										x.SelectedCrop = [c for c in CropType if x.representativity[c] == min(crops_representativity)][0]
+										x.CHOICE[PRA].append((
+										                     'Permanent crop (not in country, greater rarity and water indexes',
+										                     len(CropType)))
+							break
+						#-------------------------------------------------------------------------------------------
+
+						elif [c for c in CropType if c not in crops_in_region] != []:
+						# if selected crops have a medium or good potential occurence and if some of them are still not used in the region:
+
+							CropType = [c for c in CropType if c not in crops_in_region]
+							both_CropType_AND_representativity = [c for c in CropType if c in x.representativity]
+							# Selecting already crops which have been chosen less than 'MaxPermaCrops'-times (to avoid too much permanent crops and also a loss of biodiversity):
+							both_CropType_AND_representativity = [c for c in both_CropType_AND_representativity if x.representativity[c] < MaxPermaCrops]
+							crops_representativity = [x.representativity[c] for c in both_CropType_AND_representativity]
+
+							#=======================================================================================
+							#AVOIDING DOUBLE OLIVE TREES IN REGIONS (mature and green)
+
+							olives_already_in_region = [c for c in crops_in_region if 'OLV' in c] != []
+							only_olives_are_available = [c for c in CropType if 'OLV' not in c] == []
+
+							if olives_already_in_region and only_olives_are_available:
 								break
 
-							else: # if there are not enough representativity data
-								# we select only crops which have still never been chosen (not in x.representativity)
-								CropType = [c for c in CropType if c not in x.representativity]
-								priorityIndex = [PRIORITYfruits(c) for c in CropType if PRIORITYfruits(c) > 0]
-								#--> if there is an error in the priority assessment, it may be trees with a 0 priority....
-								x.SelectedCrop = [c for c in CropType if PRIORITYfruits(c) == min(priorityIndex)][0]
-								x.CHOICE[PRA].append(('Permanent crop (not in country, PRIORITYfruits)', len(CropType)))
-								break
+							else:
+								# =======================================================================================
+								if len(both_CropType_AND_representativity) == len(CropType) :
+								# if all crops have already been used
+									# The selected crop is the one with the lower representativity :
+									lowestRepresentativity_lower_than_MaxPermaCrops =[c for c in both_CropType_AND_representativity if (x.representativity[c] == min(crops_representativity) and x.representativity[c] < MaxPermaCrops )]
+									if lowestRepresentativity_lower_than_MaxPermaCrops != [] :
+										x.SelectedCrop = lowestRepresentativity_lower_than_MaxPermaCrops[0]
+										x.CHOICE[PRA].append(('Permanent crop (not in region, already in country)', len(CropType)))
+
+								else: # if there are not enough representativity data
+									# we select only crops which have still never been chosen (not in x.representativity)
+									CropType = [c for c in CropType if c not in x.representativity]
+									priorityIndex = [PRIORITYfruits(c) for c in CropType if PRIORITYfruits(c) > 0]
+									#--> if there is an error in the priority assessment, it may be trees with a 0 priority....
+
+									RareCrops = [c for c in CropType if PRIORITYfruits(c) == min(priorityIndex)]
+
+									if len(RareCrops) > 1 :
+
+										priority = [(x.indexWR[c] * (1 - data.plants[c]['ratioADAPT'])) / 2 for c in
+										            unusedPermanentCrops]
+										x.SelectedCrop = [c for c in CropType if (
+										x.indexWR[c] * (1 - data.plants[c]['ratioADAPT'])) / 2 == max(priority)][0]
+
+										x.CHOICE[PRA].append(
+											('Permanent crop (not in country, PRIORITYfruits + Water Resources)', len(CropType)))
+
+									elif len(RareCrops) > 0:
+										x.SelectedCrop = RareCrops[0]
+										x.CHOICE[PRA].append(('Permanent crop (not in country, PRIORITYfruits)', len(CropType)))
 
 
-						# else, these are crops with a good occurence possibility or they are already in the region:
-						# we pass, evaluate the next list and if there are no interesting crop, it will be a "normal rotation".
+							# else, these are crops with a good occurence possibility or they are already in the region:
+							# we pass, evaluate the next list and if there are no interesting crop, it will be a "normal rotation".
 
 def ASSESS_SeedingDate(PRA, x):
 	"""INPUT :
@@ -501,9 +574,14 @@ def ASSESS_SeedingDate(PRA, x):
 	x.edibleCrops_init = [c for c in x.edibleCropsID[PRA] if   c != 'RBRB']
 	x.edibleCrops_init = [c for c in x.edibleCrops_init if c != 'CC-GRASSorchard' or prodCAT(c) != 1 or prodCAT(c) != 2]
 
-	# if there is already a selected crop
-	if len(x.rotat[PRA]) > 0 :
+	# there is already a crop in the rotation AND that it is a NOT cover crop :
+	if 0 < len(x.rotat[PRA]) <= 2:
+		if prodCAT(x.rotat[PRA][1][0]) != 0 :
+			x.edibleCrops_init = [c for c in x.edibleCrops_init if prodCAT(c) != 1 and prodCAT(c) != 2]
+	# if there is already a selected crop which is no cover crop: --> [0] start, [1] first crop
+	elif len(x.rotat[PRA]) > 2:
 		x.edibleCrops_init = [c for c in x.edibleCrops_init if prodCAT(c) != 1 and prodCAT(c) != 2]
+
 
 	x.edibleCrops = x.edibleCrops_init
 
@@ -551,8 +629,14 @@ def ASSESS_SeedingDate(PRA, x):
 				x.GSstart[crop]	= x.EndPreviousCrop_earlier + 1
 
 			else:
-				x.edibleCrops = [x for x in x.edibleCrops if x != crop]
-	
+				# if there are permanent crops in the x.edibleCrops list, it does not matter when they begin to build leaves:
+				if prodCAT(crop) == 1 or prodCAT(crop) == 2:
+					x.indexDelay[crop] = 1
+					x.GSstart[crop] = seed_from(crop)
+				else:
+					x.edibleCrops = [x for x in x.edibleCrops if x != crop]
+
+
 	#=========================================================================================
 	
 	
@@ -587,6 +671,7 @@ def ASSESS_SeedingDate(PRA, x):
 
 		x.laterCrops = [] # this dict will be used in SELECT_CashCrop --> priority to crops that are not in this dict (no delay).
 
+
 		for crop in SelectEarlierPlanting.keys():
 		# adding ID of the crops for which the earliest planting date are the earliest ones among the other PRA's x.edible crops:
 			if len(delay1) + len(x.edibleCrops) > 5:
@@ -616,6 +701,7 @@ def ASSESS_SeedingDate(PRA, x):
 			for crop in [c for (c, delay) in x.laterCrops if c not in x.edibleCrops] :
 				# 'not in x.edibleCrops' avoids duplicates which create errors in the ASSESS_Nutrient function.
 				x.edibleCrops.append(crop)
+
 		print(x.laterCrops)
 		print("""			{} edible crops can be planted without any delay : {}""".format(len(x.edibleCrops),
 																							 x.edibleCrops))
@@ -645,6 +731,7 @@ def ASSESS_WaterResources(PRA, x):
 	x.TOLERdrought = 0
 	x.TOLERflood = 0
 	x.indexWR = {}
+
 
 	#=============================================================================================================
 	# loop for the Tmin(crop) Assessement (deletes all crops for which the PRA's Temperature is too cold for at least one month in GS_min :
@@ -840,11 +927,17 @@ def ASSESS_NutrientsMargin(PRA, x):
 					print("			/!\ Not enough {} to grow {}. [DELETED FROM x.edibleCrops]".format(nutrient, prod_EN(crop)))
 					if nutrient not in x.LimitingFactor[PRA]:
 						x.LimitingFactor[PRA].append(nutrient)
+
+					if crop not in x.LimitingFactor_crops:
+						x.LimitingFactor_crops[crop] = []
+					else :
+						x.LimitingFactor_crops[crop].append(nutrient)
+
 					del x.indexNutrients[crop]
 					x.edibleCrops = [x for x in x.edibleCrops if x!= crop]
 
 					if x.edibleCrops == []:
-						x.rotat[PRA].append(('Limiting factor', x.LimitingFactor[PRA], x.edibleCrops))
+						x.rotat[PRA].append(('Limiting factor', x.LimitingFactor[PRA], x.EndPreviousCrop_later))
 						x.LimitingFactorReached = True
 					else:
 						# Verifying if the 4 last crops are not cover crops (if they are, the rotation is closed) :
@@ -1019,12 +1112,14 @@ def SELECT_CashCrop(x, PRA, data):
 			SelectionDone = True
 		elif len(edibleCoverCrops) >= 1:
 			x.SelectedCrop = edibleCoverCrops[0]
+		x.CHOICE[PRA].append(('Cover crop (insufficient nutrients)', len(edibleCoverCrops)))
 
 	#===================================================================================================================
 	# Selecting the best(s) crop for following the preceding one:
 
 	else:
-		if [c for c in x.edibleCrops if prodCAT(c) == 1 or prodCAT(c) == 2] != []:
+		edible_permanent_crops = [c for c in x.edibleCrops if prodCAT(c) == 1 or prodCAT(c) == 2]
+		if edible_permanent_crops != []:
 			VERIF_TreesInRegion(PRA, x, data)
 			if x.SelectedCrop != None:
 				if  prodCAT(x.SelectedCrop) == 1 or prodCAT(x.SelectedCrop) == 2:
@@ -1033,10 +1128,14 @@ def SELECT_CashCrop(x, PRA, data):
 
 		if SelectionDone == False:
 
+			# deleting permanent crops from x.edibleCrops:
+			x.edibleCrops = [c for c in x.edibleCrops if prodCAT(c) != 1 or prodCAT(c) != 2]
+
+
 			rotation = [c for (c, companion, date) in x.rotat[PRA] if (c != 'start' and c != 'Limiting factor' and 'delay' not in c and 'season' not in c)]
 			# Note : 'delay' not in c allows to add further informations about de delay in rotat.
-			delay    = [c for (c, delay) in x.laterCrops]
-			unusedCrops = [c for c in edibleCashCrops if c not in rotation]
+			delay    = [c for (c, delay) in x.laterCrops if ( prodCAT(c) != 1 and prodCAT(c) != 2 )]
+			unusedCrops = [c for c in edibleCashCrops if ( c not in rotation and prodCAT(c) != 1 and prodCAT(c) != 2 )]
 			unusedCrops_countryScale = [c for c in unusedCrops if c not in x.totalYields["TOTAL"] and c not in delay]
 
 			# ------------------------------------------------------------------------------------------
@@ -1141,75 +1240,81 @@ def SELECT_CashCrop(x, PRA, data):
 
 	if SelectionDone == False:
 
-		# calculating the representativity index of each edible crop :
-		indexRepresent = {}
-		CropsUsedAtCountryScale = [x.representativity[c] for c in x.representativity if c in x.edibleCrops]
-		if CropsUsedAtCountryScale != [] :
-			maxRepresentativity = max([x.representativity[c] for c in x.representativity if c in x.edibleCrops])
+		#====================================================================================================
+		# Excluding crops with the highest representativity to keep a relative equilibrium
 
+		if [c for c in x.edibleCrops if c not in x.representativity] != [] :
+		# if there are still crops that have not been used at a country scale, making sure that they are the only one to stay:
+			x.edibleCrops = [c for c in x.edibleCrops if c not in x.representativity]
+		else:
+		# if all crops have been used at the country scale, chosing the one(s) with the lowest occurence:
+			CropsUsedAtCountryScale = [x.representativity[c] for c in x.representativity if c in x.edibleCrops]
+			if CropsUsedAtCountryScale != []:
+				minRepresentativity = min([x.representativity[c] for c in x.representativity if c in x.edibleCrops])
 
-		for crop in x.edibleCrops:
-			# ----------------------------------------------------------------------------------------------------------
-			if crop  in CropsUsedAtCountryScale : # if there is a crop in this list, maxRepresentativity exists
-				indexRepresent[crop] = 1 - (x.representativity[crop] / maxRepresentativity)
+			x.edibleCrops = [c for c in x.edibleCrops if x.representativity[c] == minRepresentativity]
 
-			else: # for the first study area for example, there is no representativity
-				indexRepresent[crop] = 1
+		# ====================================================================================================
 
-			# to be comparable to the other indexes, the higher value must be the better one: the lower the
-			# territorial representativity, the bigger the chance for the crop to be chosen
-			# ----------------------------------------------------------------------------------------------------------
-			Final_Edibility_Index[crop] = round(((x.indexDelay[crop] + 2 * indexRepresent[crop] + x.indexWR[
-				crop] + 0.5 * x.indexNutrients[crop] + 2 * x.indexPnD[crop]) / 6.5), 2)
-			# ----------------------------------------------------------------------------------------------------------
+		if len(x.edibleCrops) == 1 :
+			x.SelectedCrop = x.edibleCrops[0]
 
-		FinalSelection = []
-		# =======================================================================================================
+		else:
+			for crop in x.edibleCrops :
+				# to be comparable to the other indexes, the higher value must be the better one: the lower the
+				# territorial representativity, the bigger the chance for the crop to be chosen
+				# ----------------------------------------------------------------------------------------------------------
+				Final_Edibility_Index[crop] = round(((x.indexDelay[crop] + x.indexWR[
+					crop] + 0.5 * x.indexNutrients[crop] + 2 * x.indexPnD[crop]) / 4.5), 2)
+				# ----------------------------------------------------------------------------------------------------------
 
-		for crop in x.edibleCrops:
+			FinalSelection = []
+			# =======================================================================================================
 
-			if Final_Edibility_Index[crop] == max( Final_Edibility_Index.values() ):
-				FinalSelection.append(crop)
+			for crop in x.edibleCrops:
 
-		if len(FinalSelection) == 1:
-			x.SelectedCrop = FinalSelection[0]
-		#-----------------------------------------------
-		else: # considering the general priority index :
-			priority = [ data.plants[crop]['PRIORITYgeneral'] for crop in FinalSelection ]
-			FinalSelection = [x for x in FinalSelection if data.plants[x]['PRIORITYgeneral'] == max(priority)]
+				if Final_Edibility_Index[crop] == max( Final_Edibility_Index.values() ):
+					FinalSelection.append(crop)
 
 			if len(FinalSelection) == 1:
 				x.SelectedCrop = FinalSelection[0]
-			# -----------------------------------------------
-			else: # considering the priority index for fruits :
-				priority = [data.plants[crop]['PRIORITYfruits'] for crop in FinalSelection]
-				FinalSelection = [x for x in FinalSelection if data.plants[x]['PRIORITYfruits'] == max(priority)]
+			#-----------------------------------------------
+			else: # considering the general priority index :
+				priority = [ data.plants[crop]['PRIORITYgeneral'] for crop in FinalSelection ]
+				FinalSelection = [x for x in FinalSelection if data.plants[x]['PRIORITYgeneral'] == max(priority)]
 
 				if len(FinalSelection) == 1:
 					x.SelectedCrop = FinalSelection[0]
 				# -----------------------------------------------
-				else: # considering the priority index for textiles :
-					priority = [data.plants[crop]['PRIORITYtextile'] for crop in FinalSelection]
-					FinalSelection = [x for x in FinalSelection if data.plants[x]['PRIORITYtextile'] == max(priority)]
+				else: # considering the priority index for fruits :
+					priority = [data.plants[crop]['PRIORITYfruits'] for crop in FinalSelection]
+					FinalSelection = [x for x in FinalSelection if data.plants[x]['PRIORITYfruits'] == max(priority)]
 
 					if len(FinalSelection) == 1:
 						x.SelectedCrop = FinalSelection[0]
 					# -----------------------------------------------
-					else:
-						# At least, chosing the crop with the lowest ratioADAPT (crop which have the lesser geographic adaptability in the study area, here France)
-						priority = [data.plants[crop]['ratioADAPT'] for crop in FinalSelection]
-						FinalSelection = [x for x in FinalSelection if data.plants[x]['ratioADAPT'] == min(priority)]
+					else: # considering the priority index for textiles :
+						priority = [data.plants[crop]['PRIORITYtextile'] for crop in FinalSelection]
+						FinalSelection = [x for x in FinalSelection if data.plants[x]['PRIORITYtextile'] == max(priority)]
 
-						x.SelectedCrop = min(FinalSelection)
+						if len(FinalSelection) == 1:
+							x.SelectedCrop = FinalSelection[0]
+						# -----------------------------------------------
+						else:
+							# At least, chosing the crop with the lowest ratioADAPT (crop which have the lesser geographic adaptability in the study area, here France)
+							priority = [data.plants[crop]['ratioADAPT'] for crop in FinalSelection]
+							FinalSelection = [x for x in FinalSelection if data.plants[x]['ratioADAPT'] == min(priority)]
+
+							x.SelectedCrop = min(FinalSelection)
 
 
 
 	print("			The selected crop is : {} ({}).".format(prod_EN(x.SelectedCrop), prodID(x.SelectedCrop)))
 
-	if crop not in x.representativity:
-		x.representativity[crop] = 1
+	if x.SelectedCrop not in x.representativity:
+		x.representativity[x.SelectedCrop] = 1
 	else:
-		x.representativity[crop] += 1
+		x.representativity[x.SelectedCrop] += 1
 
 
 	# =========================================================================================================
@@ -1259,8 +1364,9 @@ def SELECT_CashCrop(x, PRA, data):
 			(x.SelectedCrop, None, x.EndPreviousCrop_later))
 
 		else: # If we have a delay to take into account :
-			# the later end of its GS stays the later one
-			x.rotat[PRA].append((x.PreviouslySelectedCrop, x.SelectedCC, x.EndPreviousCrop_later))
+			# the later end of its GS stays the later one, actually : (Previous Crop, None, x.EndPreviousCrop_later))
+			#--> no change for the last entry
+
 			# the delay is specified:
 			x.rotat[PRA].append(('Plantation delay', None, x.GSstart - 1))
 			# And than we add the new crop:
@@ -1493,8 +1599,22 @@ def ASSESS_Nutrients_CompanionCrop(x, PRA):
 						# 	if x.CCwater[crop] == max(x.CCwater.values()):													# by the next line (we consider all edible ComppanionCrops anyway !...?)
 						# 		crop = str(crop)
 
+					else:
+						# average removed and fixed nutrient for one month of GSmin(x.SelectedCC):
+						if nutrient == 'N':
+							x.indexNutrients[x.SelectedCC][nutrient].append(
+								x.ActualStand[PRA][nutrient] + month[monthInGS][nutrient] - (
+								(removed[nutrient] - fixedN(x.SelectedCC)) / GSmin(x.SelectedCC)))
+						else:
+							x.indexNutrients[x.SelectedCC][nutrient].append(
+								x.ActualStand[PRA][nutrient] + month[monthInGS][nutrient] - (
+								removed[nutrient] / GSmin(x.SelectedCC)))
+
 					monthInGS += 1
 					# END while (monthInGS < endGSmin)
+
+				x.indexNutrients[x.SelectedCC][nutrient] = sum(x.indexNutrients[x.SelectedCC][nutrient]) / len(
+					x.indexNutrients[x.SelectedCC][nutrient])
 
 
 

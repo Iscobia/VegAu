@@ -294,7 +294,9 @@ def MDL_Rotation(x, data):
 	#~ from Functions_step2 import *
 
 
-	country		=	sorted( [PRA for PRA in list(data.environment.keys()) if PRA != 'headers_full' and PRA != 'headers_ID'] )
+	# country		=	sorted( [PRA for PRA in list(data.environment.keys()) if PRA != 'headers_full' and PRA != 'headers_ID'] )
+	country = [PRA for PRA in list(data.environment.keys()) if PRA != 'headers_full' and PRA != 'headers_ID']
+
 	x.totalYields["TOTAL"] = {}
 
 	#===========================================================================
@@ -406,7 +408,12 @@ def MDL_Rotation(x, data):
 
 								print("[{}][{}]	GSstart = {}".format(PRA, x.EndPreviousCrop_later,x.GSstart))
 								print("[{}][{}]	Updating x.VERIFprodBOT and x.PestsDiseases_in_rotation...".format(PRA, x.EndPreviousCrop_later))
+
 								UPDATE_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x)
+
+								x.EndPreviousCrop_earlier += 12
+								x.EndPreviousCrop_later += 12
+
 
 							else:
 								raise NoNutrients
@@ -564,20 +571,22 @@ def MDL_Rotation(x, data):
 														   len(rotation_crops), MonthID(x.EndPreviousCrop_later),
 														   rotation_crops))
 
-			x.rotation_length[PRA] = (x.EndPreviousCrop_later - 2)  # because it started in March
-
-
-			average_rotation_duration = round(sum(x.rotation_length.values()) / len(x.rotation_length), 1)
-			print("""At {}% of the database, the average rotation duration is of {} months ({} years)
-
-			=============================================================================
-				  """.format(round(((PRAcursor+1)/( len(country)) ) *100, 2), average_rotation_duration, round(average_rotation_duration/12, 1) ) )
-
-			permanent_crops = [c for c in rotation_crops if (prodCAT(c) == 1 or prodCAT(c) == 2)]
-
-			x.results[PRA] = [x.rotation_length[PRA], len(list(set(rotation_crops))) ,len(rotation_crops), ", ".join(list(set(rotation_crops))), ", ".join(rotation_crops), len(permanent_crops), ", ".join(permanent_crops), ", ".join(x.LimitingFactor[PRA])]
 
 			# END while (x.LimitingFactorReached == False or x.EndPreviousCrop_later <= 120)-------------------------
+
+		x.rotation_length[PRA] = (x.EndPreviousCrop_later - 2)  # because it started in March
+
+
+		average_rotation_duration = round(sum(x.rotation_length.values()) / len(x.rotation_length), 1)
+		print("""At {}% of the database, the average rotation duration is of {} months ({} years)
+
+		=============================================================================
+			  """.format(round(((PRAcursor+1)/( len(country)) ) *100, 2), average_rotation_duration, round(average_rotation_duration/12, 1) ) )
+
+		permanent_crops = [c for c in rotation_crops if (prodCAT(c) == 1 or prodCAT(c) == 2)]
+
+		x.results[PRA] = [x.rotation_length[PRA], len(list(set(rotation_crops))) ,len(rotation_crops), ", ".join(list(set(rotation_crops))), ", ".join(rotation_crops), len(permanent_crops), ", ".join(permanent_crops), ", ".join(x.LimitingFactor[PRA])]
+
 
 		for crop in x.totalYields[PRA] :
 			if x.rotation_length[PRA] > 0 :
@@ -591,7 +600,7 @@ def MDL_Rotation(x, data):
 
 		# END for (pra in country)-----------------------------------------------------------------------------------
 
-	x.totalYields = x.totalYields["TOTAL"]
+
 
 
 
