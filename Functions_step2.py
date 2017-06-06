@@ -1590,7 +1590,11 @@ def ASSESS_Nutrients_CompanionCrop(x, PRA):
 					if margin < 0 :
 						print("			Not enough {} for growing {}...".format(nutrient, prod_EN(crop)))
 						x.edibleCompanionCrops = [CC for CC in x.edibleCompanionCrops if CC != crop]
-						del x.indexNutrients[crop]
+						try:
+							del x.indexNutrients[crop]
+						except KeyError:
+						# the origin of this error was still not found...
+							print("KeyError : x.indexNutrients['{}'] does not exists.".format(crop))
 
 						# breaking the loop to assess the nutrient margins for this new crop :
 						assert x.edibleCompanionCrops != []
@@ -1600,21 +1604,21 @@ def ASSESS_Nutrients_CompanionCrop(x, PRA):
 						# 		crop = str(crop)
 
 					else:
-						# average removed and fixed nutrient for one month of GSmin(x.SelectedCC):
+						# average removed and fixed nutrient for one month of GSmin(crop):
 						if nutrient == 'N':
-							x.indexNutrients[x.SelectedCC][nutrient].append(
-								x.ActualStand[PRA][nutrient] + month[monthInGS][nutrient] - (
-								(removed[nutrient] - fixedN(x.SelectedCC)) / GSmin(x.SelectedCC)))
+							x.indexNutrients[crop][nutrient].append(
+								x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - (
+								(removed[nutrient] - fixedN(crop)) / GSmin(crop)))
 						else:
-							x.indexNutrients[x.SelectedCC][nutrient].append(
-								x.ActualStand[PRA][nutrient] + month[monthInGS][nutrient] - (
-								removed[nutrient] / GSmin(x.SelectedCC)))
+							x.indexNutrients[crop][nutrient].append(
+								x.ActualStand[PRA][nutrient] + x.decomposition_month[monthInGS][nutrient] - (
+								removed[nutrient] / GSmin(crop)))
 
 					monthInGS += 1
 					# END while (monthInGS < endGSmin)
 
-				x.indexNutrients[x.SelectedCC][nutrient] = sum(x.indexNutrients[x.SelectedCC][nutrient]) / len(
-					x.indexNutrients[x.SelectedCC][nutrient])
+				x.indexNutrients[crop][nutrient] = sum(x.indexNutrients[crop][nutrient]) / len(
+					x.indexNutrients[crop][nutrient])
 
 
 
@@ -1623,6 +1627,32 @@ def ASSESS_Nutrients_CompanionCrop(x, PRA):
 
 			# END for (crop in x.edibleCompanionCrops)-----------------------------------------------------------------------------------
 
+		#===============================================================================================================
+		# Standardization
+
+		if x.edibleCompanionCrops != [] :
+
+			MAXvalue = {'N': [], 'P': [], 'K': [], 'Na': [], 'Mg': [], 'Ca': [], 'Mn': [], 'Fe': [], 'Cu': []}
+
+			for crop in x.edibleCompanionCrops:
+				# ----------------------------------------------------------------------------------------------
+				for nutrient in MAXvalue.keys():
+					MAXvalue[nutrient].append(x.indexNutrients[crop][nutrient])
+				# END for --------------------------------------------------------------------------------------
+
+			for nutrient in MAXvalue.keys():
+				MAXvalue[nutrient] = max(MAXvalue[nutrient])
+
+			# Margin standardization, second step (dividing by the MAXvalue to get a percentage):
+			for crop in x.edibleCompanionCrops:
+				# ----------------------------------------------------------------------------------------------
+				for nutrient in x.indexNutrients[crop].keys():
+					x.indexNutrients[crop][nutrient] /= MAXvalue[nutrient]
+				# END for ----------------------------------------------------------------------------------
+
+				# calculating the average of all standardized nutrient margin to get an index between 0 and 1 :
+				x.indexNutrients[crop] = round(
+					sum(list(x.indexNutrients[crop].values())) / len(x.indexNutrients[crop]), 3)
 
 	except AssertionError:  # crop == None, x.edibleCompanionCrops is empty
 		x.SelectedCC = None
@@ -1644,13 +1674,13 @@ def SELECT_CompanionCrop(x, PRA):
 		# This function updates the x.indexNutrients dict with standardized indices for nutrients availability
 
 
-		if x.edibleCompanionCrops != [] and x.SelectedCC == None:
+		if x.edibleCompanionCrops != []:
 		# if there are still edible CC and none of them has already been chosen:
 			selection = {}
 			for crop in x.edibleCompanionCrops:
 				selection[crop] = (x.indexWR[crop] + x.indexNutrients[crop]) / 2
 			# Choosing the higher index :
-			selection = [crop for crop in x.edibleCompanionCrops if selection[crop] == max(selection)]
+			selection = [crop for crop in x.edibleCompanionCrops if selection[crop] == max(selection.values())]
 			x.SelectedCC = selection[0]
 
 			print("Companion crop selected: {}".format(prod_EN(x.SelectedCC)))
@@ -1730,7 +1760,7 @@ def APPLY_ResiduesDecomposition_of_CompanionCrop(x):
 			mineralizedCPK_amount = mineralizedCPK(x.SelectedCC, i) - mineralizedCPK(x.SelectedCC, i - 1)
 			# the functions mineralizedCPK(crop, month) and mineralizedN(crop, month) give the mineralized stuff amount at month[i]
 			# to get the mineralized amount while month[i] only --> month[i] - month [i-1]
-			while mineralizedN_amount > 0 or mineralizedCKN_amount > 0:
+			if mineralizedN_amount > 0 or mineralizedCKN_amount > 0:
 
 				if nutrient == 'N':
 					x.decomposition_month[i][nutrient] += mineralizedN_amount/2 # The density of a CompanionCrop can't be as high as if it were grown alone -> divided by 2

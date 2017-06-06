@@ -36,7 +36,7 @@ class x:
 	#=======================================================
 	#== COMMON VARIABLES:
 	results = {}
-
+	dietary_results = {}
 
 
 	#=======================================================
@@ -88,6 +88,7 @@ class x:
 	# Territorial  repartition
 	prodSURFACE = {}
 	ActualStand = {}
+	mapsPreparation = {}
 
 	# Limiting Factors (lack of nutrients, pests and diseases)
 	LimitingFactor = {}

@@ -74,7 +74,7 @@ def MDL_QTTperPERSON(x, nutrition):
 
 	for crop in x.totalYields:
 		# converting the total Yields from tons to kilogramms
-		# total_yield			=	round(float(x.totalYields[crop]) * 1000, 3) # x.totalYields gives bigger amounts than x.totalYields... waiting better results
+		# total_yield			=	round(float(x.totalYields[crop]) * 1000, 3) # x.totalYields gives bigger amounts than x.totalYields... waiting better dietary_results
 		total_yield = round(float(x.totalYields[crop]) * 1000, 3)
 		# productQuantity = float(prodQUANTITY(crop))
 		# x.DailyResources[crop] = ((total_yield * productQuantity) / 365) / totalPopulation
@@ -104,21 +104,36 @@ def MDL_QTTperPERSON(x, nutrition):
 			'vitB1'	:	vitB1(crop),	# Thiamine
 			'vitB2'	:	vitB2(crop),	# Riboflavine
 			'vitB3'	:	vitB3(crop),	# PP or Niacine
-			'vitB5'	:	vitB5,			# pentothénique acid
+			'vitB5'	:	vitB5(crop),	# pentothénique acid
 			'vitB6'	:	vitB6(crop),
 			'vitB12':	vitB12(crop),
 			'vitB9'	:	vitB9(crop),	# total folates ("Folates totaux")
 		}
 
 
-		x.TotalNutrients[crop] = {}
+		x.TotalNutrients[crop] = CropNutrients
 
 		for nutrient in CropNutrients.keys():
+			#===========================================================================================================
+			# For calculating the nutrients for each crop (to get an idea of how it contributes to the total nutrients intake
 			if nutrient not in  x.TotalNutrients[crop].keys():
 				x.TotalNutrients[nutrient] = 0
 			else:
+				# updating the total nutrients amount that the crop can give each day acc. to its average yearly yield:
+				try:
+					x.TotalNutrients[crop][nutrient] *= total_yield / 365
+				except TypeError:
+					# the value for x.TotalNutrients[crop][nutrient] (from the original database) may be '':
+					x.TotalNutrients[crop][nutrient] = 0
+
+			# ===========================================================================================================
+			# For calculating the total nutrients intake
+
+			if nutrient not in x.TotalNutrients.keys():
+					x.TotalNutrients[nutrient] = 0
+			else:
 				# adding the nutritional value of the current crop to x.TotalNutrients :
-				x.TotalNutrients[nutrient] += (CropNutrients[nutrient] * yearly_Yield) / 365
+				x.TotalNutrients[nutrient] += (CropNutrients[nutrient] * total_yield) / 365
 
 
 
@@ -141,7 +156,7 @@ def MDL_QTTperPERSON(x, nutrition):
 			'19-30 ans': 4493007,
 			'31-50 ans': 8440846,
 			'51-70 ans': 8410878,
-			'>70 ans': 4772705},
+			'> 70 ans': 4772705},
 
 		'Hommes': {
 			'9-13 ans': 2052720,
@@ -149,13 +164,13 @@ def MDL_QTTperPERSON(x, nutrition):
 			'19-30 ans': 4502265,
 			'31-50 ans': 8248735,
 			'51-70 ans': 7800488,
-			'>70 ans': 3233939}
+			'> 70 ans': 3233939}
 	}
 
 
 	NutrientsName = {
-		'Mg': 'Magnésium',
-		'P'	:	'Phosphore',
+		'Mg'    : 'Magnésium',
+		'P'	    :	'Phosphore',
 		'K'		:	'Potassium',
 		'Ca'	:	'Calcium',
 		'Mn'	:	'Manganèse',
@@ -183,128 +198,83 @@ def MDL_QTTperPERSON(x, nutrition):
 		'vitB9'	:	'Folates'
 	}
 
-	for gender in PopulationPyramid.keys():
-		x.results[gender] = {}
+	IntakeThreshold = [('BME', 'sumBME', 'pctBME'), ('AS', 'sumANR_AS', 'pctANR_AS'), ('AMT', 'sumAMT', 'pctAMT')]
 
-		for age in PopulationPyramid[gender].keys():
-			x.results[gender][age] = {}
-			for nutrient in x.TotalNutrients.keys():
+	for gender in sorted(PopulationPyramid):
 
-				for elt in Canada_Health.keys():
+		for age in sorted(PopulationPyramid[gender]):
+
+			for nutrient in sorted(NutrientsName) :
+				x.dietary_results[nutrient] = {}
+
+				for elt in sorted( Canada_Health.keys() ):
+
+					#---------------------------------------------------------------------------------------------------
 
 					if NutrientsName[nutrient] in elt:
-						x.results[gender][age][nutrient] = {}	# this dict will contain the individual percentage of
-																# daily recommended intake amounts (min, max and average)
-						print(elt)
-						if 'BME' in elt :
-							if Canada_Health[elt][gender][age] == 'ND':
-								x.results[gender][age][nutrient]['pctBME'] = 'ND'
-							else:
-								x.results[gender][age][nutrient]['pctBME'] = x.TotalNutrients[nutrient] / Canada_Health[elt][gender][age]
 
-						elif 'AS' in elt :
-							if Canada_Health[elt][gender][age] == 'ND':
-								x.results[gender][age][nutrient]['pctANR_AS'] = 'ND'
-							else:
-								x.results[gender][age][nutrient]['pctANR_AS'] = x.TotalNutrients[nutrient] / Canada_Health[elt][gender][age]
+						for i, threshold in enumerate(IntakeThreshold):
 
-						elif 'AMT' in elt :
-							if Canada_Health[elt][gender][age] == 'ND':
-								x.results[gender][age][nutrient]['pctAMT'] = 'ND'
-							else:
-								x.results[gender][age][nutrient]['pctAMT'] = x.TotalNutrients[nutrient] / Canada_Health[elt][gender][age]
+							if IntakeThreshold[i][0] in elt:
+								if Canada_Health[elt][gender][age] == 'ND':
+									pass
 
-							# END if (NutrientsName[nutrient] in elt)--------------------------------------------------------------------------------
-
-							# END for (elt in Canada_Health)---------------------------------------------------------------------------------------------
-
-				if 'pctBME_sum' not in x.results and 'pctBME_nb' not in x.results:
-					x.results['pctBME'] = [0, 0]
-				else:
-					x.results['pctBME'][0]	+= x.results[gender][age][nutrient]['pctBME']
-					x.results['pctBME'][1]	+= 1
-
-				if 'pctANR_AS_sum' not in x.results and 'pctANR_AS_nb' not in x.results:
-					x.results['pctANR_AS'] = [0, 0]
-				else:
-					x.results['pctANR_AS'][0]	+= x.results[gender][age][nutrient]['pctANR_AS']
-					x.results['pctANR_AS'][1]	+= 1
-
-				if 'pctAMT_sum' not in x.results and 'pctAMT_nb' not in x.results:
-					x.results['pctAMT'] = [0, 0]
-				else:
-					x.results['pctAMT'][0]	+= x.results[gender][age][nutrient]['pctAMT']
-					x.results['pctAMT'][1]	+= 1
-
-				# END for (nutrient)-------------------------------------------------------------------------------------------------------------
-
-				# END for (age)----------------------------------------------------------------------------------------------------------------------
-
-				# END for (gender)-----------------------------------------------------------------------------------------------------------------------
+								else:
+									if IntakeThreshold[i][1] in x.dietary_results[nutrient]:
+										x.dietary_results[nutrient][IntakeThreshold[i][1]] += Canada_Health[elt][gender][age]
+									else:
+										x.dietary_results[nutrient][  IntakeThreshold[i][1]  ] = Canada_Health[elt][gender][age]
 
 
-	x.results['pctBME']		=	x.results['pctBME'][0]	/	x.results['pctBME'][1]
+						# END if (NutrientsName[nutrient] in elt)-------------------------------------------------------
 
-	x.results['pctANR_AS']	=	x.results['pctANR_AS'][0 ]/	x.results['pctANR_AS'][1]
-
-	x.results['pctAMT']		=	x.results['pctAMT'][0]	/	x.results['pctAMT'][1]
+					# END for (elt in Canada_Health)--------------------------------------------------------------------
 
 
 
-#~ def ASSESS_QTTperPERSON():
-	#~ """This function updates the 'TotalNutrients' dictionary by dividing each nutrient amount by the total population
-	#~ and copies the results in the sheet 'NUTRIassess' for each crop in order to keep a friendly interface to oberve the results.
-	#~ 
-	#~ OUTPUT:
-	#~ * updated 'TotalNutrient' dictionnay with the average nutrient quantity per person 
-	#~ * fulfilled 'NUTRIassess' sheet
-	#~ * fulfilled 'Results' sheet
-	#~ """
-	#~ 
-	#~ 
-	#~ DailyIntakeAmount = {}
-	#~ totalPopulation = 64859599 # INSEE, estimated population for the 1st of January 2017
-	#~ PopulationPyramid = {
-		#~ 'Nourrissons' : 714683
-		#~ 'Enfants': {'1-3 ans': 2243173, '4-8 ans': 3990871},
-		#~ 'Femmes': {
-			#~ '9-13 ans' = 1958610,
-			#~ '14-18 ans' = 1949007,
-			#~ '19-30 ans' = 4493007,
-			#~ '31-50 ans' = 8440846,
-			#~ '51-70 ans' = 8410878,
-			#~ '>70 ans' = 4772705},
-#~ 
-		#~ 'Hommes':{
-			#~ '9-13 ans' = 2052720,
-			#~ '14-18 ans' = 2047672,
-			#~ '19-30 ans' = 4502265,
-			#~ '31-50 ans' = 8248735,
-			#~ '51-70 ans' = 7800488,
-			#~ '>70 ans' = 3233939}
-	#~ }
-	#~ 
-	#~ 
-	#~ for crop in x.TotalNutrients.keys():
-		#~ 
-		#~ for nutrient in x.TotalNutrients[crop].keys():
-			#~ # calculating the prod weight /person/years
-			#~ x.TotalNutrients[crop][nutrient] 	/=	totalPopulation
-#~ 
-			#~ if x.TotalNutrients[nutrient] == 'Yield in kg' and prodQUANTITY(crop) != '':
-				#~ # 'prodQUANTITY' is the average fruit/vegetable quantity that corresponds to the yields weight (cf "prod_qtt" column in 'NUTRITION')
-				#~ WeeklyResources[crop] = x.TotalNutrients[crop]['Yield in kg'] / prodQUANTITY(crop) / (365/7)
-				#~ DailyResources[crop] = x.TotalNutrients[crop]['Yield in kg'] / prodQUANTITY(crop) / 365
-				#~ 
-			#~ else:	
-				#~ if nutrient not in DailyIntakeAmount.keys():
-					#~ DailyIntakeAmount[nutrient] = 0
-				#~ else:
-					#~ DailyIntakeAmount[nutrient] += x.TotalNutrients[crop][nutrient] / 365 # average quantity per day 
-			#~ 
-			#~ 
-		#~ print("This model built x.rotations that would allow the population to get :")
-		#~ for nutrient in DailyIntakeAmount.keys() :
-			#~ print("	* {} of {}".format( DailyIntakeAmount[nutrient] , nutrient) )
-			
+				for i, threshold in enumerate(IntakeThreshold):
+					if IntakeThreshold[i][1] in x.dietary_results[nutrient]:
+					# if the threshold value was 'NB' in the CanadaHealth database, there is no value
+						x.dietary_results[nutrient][IntakeThreshold[i][2]] = x.TotalNutrients[
+								                                             nutrient] / \
+							                                             x.dietary_results[nutrient][
+								                                             IntakeThreshold[i][1]]
+						del x.dietary_results[nutrient][ IntakeThreshold[i][1] ]
 
+
+				# END for (nutrient)------------------------------------------------------------------------------------
+
+			# END for (age)---------------------------------------------------------------------------------------------
+
+		# END for (gender)----------------------------------------------------------------------------------------------
+
+
+	#===================================================================================================================
+
+	# Calculating an average value for all nutrients together to get an overview :
+	for nutrient in NutrientsName:
+
+		#-----------------------------------------------------------------------------------------------------
+
+		# 1 -- summing all percentages (for all nutrients) and taking h*the amount of data into account:
+		# (not always the same acc. to the amount of 'NA' in the CanadaHealth database)
+		for pctThreshold in x.dietary_results[nutrient]:
+
+			if pctThreshold not in x.dietary_results:
+
+				x.dietary_results[pctThreshold] = [0, 0]
+
+				x.dietary_results[pctThreshold][0] += x.dietary_results[nutrient][pctThreshold]
+				x.dietary_results[pctThreshold][1] += 1
+
+			else:
+				x.dietary_results[pctThreshold][0] += x.dietary_results[nutrient][pctThreshold]
+				x.dietary_results[pctThreshold][1] += 1
+
+		# -----------------------------------------------------------------------------------------------------
+
+		# 2 -- calculating the average for all threshold type :
+
+	for i, threshold in enumerate(IntakeThreshold):
+
+		x.dietary_results[ IntakeThreshold[i][2] ]		=	x.dietary_results[ IntakeThreshold[i][2] ][0]	/	x.dietary_results[ IntakeThreshold[i][2] ][1]

@@ -544,40 +544,45 @@ def MDL_Rotation(x, data):
 				break
 
 
+			# END while (x.LimitingFactorReached == False or x.EndPreviousCrop_later <= 120)-------------------------
+
 			# The following variable exists to inform the user in the last print AND for a x.results[PRA] entry.
-			rotation_crops = [crop for (crop, companion, last_month) in x.rotat[PRA] if (crop != 'start' and crop != 'Limiting factor' and 'delay' not in crop and 'season' not in crop)]
+			rotation_crops = [crop for (crop, companion, last_month) in x.rotat[PRA] if (
+			crop != 'start' and crop != 'Limiting factor' and 'delay' not in crop and 'season' not in crop)]
 
-			if x.LimitingFactorReached == True :
+			if x.LimitingFactorReached == True:
 				print("""
-	[{}][{}]	END OF THE ROTATION : Nutrients are not sufficient (Limiting factor is {}).
+[{}][{}]	END OF THE ROTATION : Nutrients are not sufficient (Limiting factor is {}).
 
-	{} different crops out of {} succeeded until {}: {}
+{} different crops out of {} succeeded until {}: {}
 
-				""".format( PRA, x.EndPreviousCrop_later, x.rotat[PRA][-1][1], len(list(set(rotation_crops))), len(rotation_crops), MonthID(x.EndPreviousCrop_later), rotation_crops ))
+					""".format(PRA, x.EndPreviousCrop_later, x.rotat[PRA][-1][1], len(list(set(rotation_crops))),
+				               len(rotation_crops), MonthID(x.EndPreviousCrop_later), rotation_crops))
 
-			elif x.EndPreviousCrop_later > 120 :
+			elif x.EndPreviousCrop_later > 120:
 				print("""
-	[{}][{}]	END OF THE ROTATION : The rotation reached 10 years --> switching to next PRA
+[{}][{}]	END OF THE ROTATION : The rotation reached 10 years --> switching to next PRA
 
-	{} different crops out of {} succeeded until {}: {}
-								""".format(PRA, x.EndPreviousCrop_later, len(list(set(rotation_crops))) ,len(rotation_crops), MonthID(x.EndPreviousCrop_later),
-										   rotation_crops))
+{} different crops out of {} succeeded until {}: {}
+									""".format(PRA, x.EndPreviousCrop_later, len(list(set(rotation_crops))),
+				                               len(rotation_crops), MonthID(x.EndPreviousCrop_later),
+				                               rotation_crops))
 			else:
 				print("""
 [{}][{}]	END OF THE ROTATION : An error has been raised, the while loop is broken ("break")
 
-					{} different crops out of {} succeeded until {}: {}
-												""".format(PRA, x.EndPreviousCrop_later, len(list(set(rotation_crops))),
-														   len(rotation_crops), MonthID(x.EndPreviousCrop_later),
-														   rotation_crops))
-
-
-			# END while (x.LimitingFactorReached == False or x.EndPreviousCrop_later <= 120)-------------------------
+{} different crops out of {} succeeded until {}: {}
+													""".format(PRA, x.EndPreviousCrop_later,
+				                                               len(list(set(rotation_crops))),
+				                                               len(rotation_crops),
+				                                               MonthID(x.EndPreviousCrop_later),
+				                                               rotation_crops))
 
 		x.rotation_length[PRA] = (x.EndPreviousCrop_later - 2)  # because it started in March
 
 
 		average_rotation_duration = round(sum(x.rotation_length.values()) / len(x.rotation_length), 1)
+
 		print("""At {}% of the database, the average rotation duration is of {} months ({} years)
 
 		=============================================================================
@@ -585,8 +590,7 @@ def MDL_Rotation(x, data):
 
 		permanent_crops = [c for c in rotation_crops if (prodCAT(c) == 1 or prodCAT(c) == 2)]
 
-		x.results[PRA] = [x.rotation_length[PRA], len(list(set(rotation_crops))) ,len(rotation_crops), ", ".join(list(set(rotation_crops))), ", ".join(rotation_crops), len(permanent_crops), ", ".join(permanent_crops), ", ".join(x.LimitingFactor[PRA])]
-
+		x.results[PRA]  = [x.rotation_length[PRA], len(list(set(rotation_crops))) ,len(rotation_crops), ", ".join(list(set(rotation_crops))), ", ".join(rotation_crops), len(permanent_crops), ", ".join(permanent_crops), ", ".join(x.LimitingFactor[PRA])]
 
 		for crop in x.totalYields[PRA] :
 			if x.rotation_length[PRA] > 0 :
@@ -598,9 +602,23 @@ def MDL_Rotation(x, data):
 				else:
 					x.totalYields["TOTAL"][crop] += round(x.totalYields[PRA][crop], 3)
 
+
+
 		# END for (pra in country)-----------------------------------------------------------------------------------
 
+	x.mapsPreparation = {'headers':[], 'totalYields' : []}
 
+	for crop in sorted(x.totalYields["TOTAL"]):
+		x.mapsPreparation['headers'].append("{} ({})".format(prod_EN(crop), crop))
+
+		for PRA in country:
+
+			if PRA not in x.mapsPreparation:
+				x.mapsPreparation[PRA] = []
+
+			x.mapsPreparation[PRA].append( len( [c for c in x.results[PRA] if c == crop] ) )
+
+		x.mapsPreparation['totalYields'].append(x.totalYields["TOTAL"][crop])
 
 
 
@@ -644,28 +662,52 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 							"Total amount of crops in the rotation", "Different crops in the rotation (ID)",
 							"Crops in the rotation (ID)", "Permanent crop ?", "Permanent crop ID",
 							"Limiting Factor(s)"]
+
 	# -----------------------------------------------------------------------------------------------
 	# Exporting the results in a new python file
+	fileName = 'results3'
 
-	with open('first_results.py', 'a') as saves:
+	with open('{}.py'.format(fileName), 'a') as saves:
 		pass # makes sure that the file exists : if there is no file with this name, its creates it
 
-	with open('first_results.py', 'w') as saves:
+	with open('{}.py'.format(fileName), 'w') as saves:
 		saves.write("""results = {\n """)
 		for entry in sorted(x.results.keys()):
 			saves.write("""	'{}': {},\n """.format(entry, x.results[entry]))
 		saves.write("""	{}""".format('}'))
+
+
+
 	#-----------------------------------------------------------------------------------------------
 	# Exporting the results in a .csv file :
 
-	# with open('first_results.csv', 'a') as saves:
-	# 	pass # makes sure that the file exists : if there is no file with this name, its creates it
-	#
-	# with open('first_results.csv', 'w') as saves:
-	# 	saves.write("''; " + "; ".join(x.results["headers"])+'\n')
-	# 	for entry in sorted(x.results.keys()):
-	#
-	# 		saves.write("	'{}'; {}\n".format( str(entry), str("; ".join(x.results[entry])) ))
+	with open('{}.csv'.format(fileName), 'a') as saves:
+		pass # makes sure that the file exists : if there is no file with this name, its creates it
+
+	with open('{}.csv'.format(fileName), 'w') as saves:
+		saves.write("'AoI'; " + "; ".join(x.results["headers"] + x.mapsPreparation["headers"])+'\n')
+		for entry in sorted(x.results.keys()):
+
+			saves.write("'{}'; {}\n".format( str(entry), str("; ".join([str(v) for v in x.results[entry]] + [str(v) for v in x.mapsPreparation[entry]])) ))
+
+		# Pour les yields de x.mapsPreparation :
+		saves.write("'{}'; {}\n".format(str(entry), str(
+			"; ".join(["" for v in x.results["headers"]] + [str(v) for v in x.mapsPreparation['totalYields']]))))
+
+	print("Saves done.")
+
+	# =========================================================================
+	#=========================================================================
+	# FOR THE TESTS : TO DELETE WHEN THE PROGRAMM IS STABLE
+	# x.totalYields["TOTAL"] = {}
+	# for crop in x.totalYields:
+	# 	if 'CC' not in crop:  # excuding Cover Crops from the total
+	# 		if crop not in x.totalYields["TOTAL"].keys():
+	# 			x.totalYields["TOTAL"][crop] = round(x.totalYields[crop], 3)
+	# 		else:
+	# 			x.totalYields["TOTAL"][crop] += round(x.totalYields[crop], 3)
+	# =========================================================================
+	# =========================================================================
 
 
 	#==================================================================================================================================
@@ -687,9 +729,7 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 	#==================================================================================================================================
 	### Exporting the data in 'output.ods'
 	
-	import exporting_in_ODS
-	
-	
+
 	#==================================================================================================================================
 	### Showing the results on the screen:
 	print("______________________________________________")
