@@ -120,5 +120,5 @@ class x:
 	#=======================================================
 	#== FROM STEP 3: (cf Functions_step3)
 	TotalNutrients = {}
-	DailyResources = {}
+	WeeklyResources = {}
 

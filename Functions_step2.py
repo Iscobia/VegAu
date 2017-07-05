@@ -390,9 +390,9 @@ def VERIF_TreesInRegion(PRA, x, data):
 	x.SelectedCrop = crop
 	"""
 
-	print("			Verifying if there are permanent crops for this PRA...")
+	print("			Verifying if there are permanent crops with optimal Water Requirements for this PRA...")
 	# representativity limit for permanent crops
-	MaxPermaCrops = round((0.1 * len([pra for pra in environment if pra != 'headers_full' and pra != 'headers_ID']) / len([c for c in plants if prodCAT(c) == 1 or prodCAT(c) == 2]) ))
+	MaxPermaCrops = round((0.15 * len([pra for pra in environment if pra != 'headers_full' and pra != 'headers_ID']) / len([c for c in plants if prodCAT(c) == 1 or prodCAT(c) == 2]) ))
 
 	PRA_in_region = [pra for pra in environment if pra in x.results and (CODE_REG(pra) == CODE_REG(PRA) and pra != PRA)]
 	PRA_in_dept = [pra for pra in environment if pra in x.results and (CODE_DEPT(pra) == CODE_DEPT(PRA) and pra != PRA)]
@@ -410,7 +410,7 @@ def VERIF_TreesInRegion(PRA, x, data):
 	if len([c for c in crops_in_dept if prodCAT(c) == 1 or prodCAT(c) == 2]) <= 2:
 	# if there are already 2 permanent crops in the departement, we give priority to changing crops. Else:
 
-		permanent_crops_in_PRA = [c for c in x.edibleCrops if (prodCAT(c) == 1 or prodCAT(c) == 2)]
+		permanent_crops_in_PRA = [c for c in x.edibleCrops if (prodCAT(c) == 1 or prodCAT(c) == 2) and x.indexWR[c] > 0.98]
 		fruits_in_PRA = [c for c in permanent_crops_in_PRA if ('FRT' in c or 'EXOT' in c)]
 		nuts_in_PRA = [c for c in permanent_crops_in_PRA if 'NUT' in c]
 		berries_in_PRA = [c for c in permanent_crops_in_PRA if 'BERRY' in c]
@@ -418,8 +418,14 @@ def VERIF_TreesInRegion(PRA, x, data):
 
 		#-------------------------------------------------------------------------------------------------------------------
 		# Olive trees have twice more chance to appear in a region because olives can be green or mature:
-		# if there is already an "olive-PRA" in the region, olives are rejected for this one.
-		if [c for c in crops_in_region if 'OLV' in c] != [] and [c for c in other_trees_in_PRA if 'OLV' in c] != []:
+		# if there is already an "olive-PRA" in the region
+		# or if olives trees reached the maximal amount of permanent trees, olives are rejected for this one.
+		if 'OLVmat'  in x.representativity and 'OLVgreen' in x.representativity :
+			too_much_olive_trees = x.representativity['OLVgreen'] + x.representativity['OLVmat']    >=   MaxPermaCrops
+		else:
+			too_much_olive_trees = False
+
+		if ([c for c in crops_in_region if 'OLV' in c] != [] and [c for c in other_trees_in_PRA if 'OLV' in c] != []) or too_much_olive_trees:
 			other_trees_in_PRA = [c for c in other_trees_in_PRA if 'OLV' not in c]
 		# ------------------------------------------------------------------------------------------------------------------
 
@@ -797,8 +803,8 @@ def ASSESS_WaterResources(PRA, x):
 		for crop in x.indexWR:
 			x.indexWR[crop] = round(x.indexWR[crop] / max(x.indexWR.values()), 4)
 
-		print("""			Standardization of the Water Resources indices [OK]
-		#			x.indexWR = """, x.indexWR)
+		print("""			Standardization of the Water Resources indices [OK]""")
+
 
 		# at the end of these both loops, we get an 'indexWR' dictionary with a "WaterResources evaluation" (WReval)
 		# for each edible crop. -> helps to compare, at the end, with the remaining crops.
@@ -1044,11 +1050,27 @@ def ASSESS_PestDiseases(x, PRA):
 			x.indexPnD[crop] = 1
 
 		else:
-			duration_since_previous_crop	=	x.VERIFprodBOT[prodBOT(crop)]['Duration since previous crop']
+			try:
+				# x.rotat[-2][-1] should correspond to the beginning of the GS of the previously selected crop,
+				# or most exactly the end of the previously selected crop
+				growing_season__of_the_last_crop = int(x.GSstart[crop] - x.rotat[PRA][-2][-1])
+			except :
+				if x.SelectedCrop != None :
+					growing_season__of_the_last_crop = GSmax(x.SelectedCrop)
+				else:
+					growing_season__of_the_last_crop = 0
+			duration_since_previous_crop	=	x.VERIFprodBOT[prodBOT(crop)]['Duration since previous crop'] + growing_season__of_the_last_crop
 
-			x.indexPnD[crop] = (duration_since_previous_crop / 12) / period(crop)
+			# Notice that duration_since_previous_crop is in months when period is in years :
+			x.indexPnD[crop] = (duration_since_previous_crop /12 )/ period(crop)
 			# theoritically, if x.indexPnD[prodBOT(crop)] >= 1, no risk -> the highest the ratio, the better the conditions (like the other indexes, important)
 
+			if x.indexPnD[crop] > 1 :
+				x.indexPnD[crop] = 1
+			# if the pests and diseases risk is too high (60% of yield reduction), the crop is deleted from the list :
+			elif x.indexPnD[crop] <= 0.4 :
+				del x.indexPnD[crop]
+				x.edibleCrops = [c for c in x.edibleCrops if c != crop]
 
 	for crop in x.indexPnD:
 		if x.indexPnD[crop] != 1: # x.indexPnD[crop] has already been set to 1 because there have no Pests and
@@ -1905,16 +1927,18 @@ def UPDATE_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x):
 
 	if x.EndPreviousCrop_earlier <= x.GSstart <= x.EndPreviousCrop_later:
 		for BotanicFamily in x.VERIFprodBOT.keys():
-			x.VERIFprodBOT[BotanicFamily][
-				'Duration since previous crop'] += GSmin(x.SelectedCrop) + x.GSstart - x.EndPreviousCrop_earlier
+			x.VERIFprodBOT[BotanicFamily]['Duration since previous crop'] += GSmin(x.SelectedCrop) + x.GSstart - x.EndPreviousCrop_earlier
 	elif x.GSstart > x.EndPreviousCrop_later:
 		for BotanicFamily in x.VERIFprodBOT.keys():
-			x.VERIFprodBOT[BotanicFamily][
-				'Duration since previous crop'] += GSmin(x.SelectedCrop) + x.GSstart - x.EndPreviousCrop_later
+			x.VERIFprodBOT[BotanicFamily]['Duration since previous crop'] += GSmin(x.SelectedCrop) + x.GSstart - x.EndPreviousCrop_later
 
 	else :
 		print("ERROR ! Can't increment the VERIFprodBOT dict...")
 
+		# WORKAROUND :
+		#TODO : understand why the both first conditions are not sufficient
+		for BotanicFamily in x.VERIFprodBOT.keys():
+			x.VERIFprodBOT[BotanicFamily]['Duration since previous crop'] += GSmin(x.SelectedCrop)
 
 	# ==================================================
 	# Updating VERIFprodBOT : new entry if the crop's botanic family is not in the dict:
@@ -1926,9 +1950,10 @@ def UPDATE_VERIFprodBOT_and_PestsDiseases_in_rotation(PRA, x):
 	# ==================================================
 
 
-	# x.SelectedCrop is added to the list of the crops added to the rotation :
+	# x.SelectedCrop is added to the list of the crops added to the rotation
+	# (if the "duration since the previous crop" is 0, it has just been added) :
 
-	if x.VERIFprodBOT[prodBOT(x.SelectedCrop)]['Duration since previous crop']//12 < period(x.SelectedCrop):
+	if x.VERIFprodBOT[prodBOT(x.SelectedCrop)]['Duration since previous crop']//12 < period(x.SelectedCrop) and x.VERIFprodBOT[prodBOT(x.SelectedCrop)]['Duration since previous crop']//12 != 0:
 
 		# if the minimum return period is not respected:
 		#------------------------------------------------------------------------------------

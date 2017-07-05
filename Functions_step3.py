@@ -67,17 +67,31 @@ def MDL_QTTperPERSON(x, nutrition):
 	# --> Summing the nutrients and vitamins of all products in the appropriate variables (1 variable per nutritional feature)
 	# of the dictionary 'TotalNutrients' (each key corresponds to a nutrient, vitamin or other dietetic feature)
 
+	print("""			Calculating the daily amount of each product per person and the total intake of each
+			nutrient for the total population...""")
+
 	x.totalYields = x.totalYields["TOTAL"]
 
-	x.DailyResources = {}
+	x.WeeklyResources = {}
 	totalPopulation = 64859599
 
 	for crop in x.totalYields:
-		# converting the total Yields from tons to kilogramms
-		# total_yield			=	round(float(x.totalYields[crop]) * 1000, 3) # x.totalYields gives bigger amounts than x.totalYields... waiting better dietary_results
-		total_yield = round(float(x.totalYields[crop]) * 1000, 3)
-		# productQuantity = float(prodQUANTITY(crop))
-		# x.DailyResources[crop] = ((total_yield * productQuantity) / 365) / totalPopulation
+
+		if crop == "FBRflx":
+			# for fibre flax, yields are given for the fibre : for a fibre yield of 4.94 t/ha, there are 1 t/ha of seeds.
+
+			# converting the total Yields from tons to kilogramms
+			total_yield = round( float(x.totalYields[crop])/4.94 * 1000,  3)
+
+		else:
+			# converting the total Yields from tons to kilogramms
+			total_yield = round(float(x.totalYields[crop]) * 1000, 3)
+
+		productQuantity     = float(prodQUANTITY(crop))
+
+		x.WeeklyResources[crop]  = ((total_yield * productQuantity) / 365 * 7) / totalPopulation
+
+		print("{} : {} piece per week ({} kg, so {} kg in one year)".format(prod_EN(crop), x.WeeklyResources[crop], total_yield/365*7, total_yield))
 
 		# -------------------------------------------------------------------------------------------------------------------------
 		CropNutrients = {
@@ -111,33 +125,29 @@ def MDL_QTTperPERSON(x, nutrition):
 		}
 
 
-		x.TotalNutrients[crop] = CropNutrients
+		x.TotalNutrients[crop] = dict(CropNutrients)
 
-		for nutrient in CropNutrients.keys():
+		for nutrient in x.TotalNutrients[crop].keys():
 			#===========================================================================================================
-			# For calculating the nutrients for each crop (to get an idea of how it contributes to the total nutrients intake
-			if nutrient not in  x.TotalNutrients[crop].keys():
-				x.TotalNutrients[nutrient] = 0
-			else:
-				# updating the total nutrients amount that the crop can give each day acc. to its average yearly yield:
-				try:
-					x.TotalNutrients[crop][nutrient] *= total_yield / 365
-				except TypeError:
-					# the value for x.TotalNutrients[crop][nutrient] (from the original database) may be '':
-					x.TotalNutrients[crop][nutrient] = 0
+			# Calculating the nutrients for each crop (to get an idea of how it contributes to the total nutrients intake):
+			# Updating the total nutrients amount that the crop can give each day acc. to its average yearly yield:
+			try:
+				x.TotalNutrients[crop][nutrient] *= total_yield / 365
+			except TypeError:
+				# the value for x.TotalNutrients[crop][nutrient] (from the original database) may be '':
+				x.TotalNutrients[crop][nutrient] = 0
 
 			# ===========================================================================================================
 			# For calculating the total nutrients intake
+			# adding the nutritional value of the current crop to x.TotalNutrients :
 
-			if nutrient not in x.TotalNutrients.keys():
-					x.TotalNutrients[nutrient] = 0
-			else:
-				# adding the nutritional value of the current crop to x.TotalNutrients :
-				x.TotalNutrients[nutrient] += (CropNutrients[nutrient] * total_yield) / 365
-
-
+			if nutrient not in x.TotalNutrients:
+				x.TotalNutrients[nutrient] = x.TotalNutrients[crop][nutrient]
+			else :
+				x.TotalNutrients[nutrient] += x.TotalNutrients[crop][nutrient]
 
 			# END for (crop in x.totalYields.keys())-------------------------------------------------------------------------------------
+
 
 
 	# ==========================================================================================#
@@ -145,6 +155,8 @@ def MDL_QTTperPERSON(x, nutrition):
 	#		STEP 3, PART 2 : dividing each nutrient amount by the total population				#
 	# ==========================================================================================#
 	# ==========================================================================================#
+
+	print("""			Calculating the average daily intake amount per person...""")
 
 	# totalPopulation = 64859599  # INSEE, estimated population for the 1st of January 2017
 	PopulationPyramid = {
@@ -221,26 +233,14 @@ def MDL_QTTperPERSON(x, nutrition):
 
 								else:
 									if IntakeThreshold[i][1] in x.dietary_results[nutrient]:
-										x.dietary_results[nutrient][IntakeThreshold[i][1]] += Canada_Health[elt][gender][age]
+										x.dietary_results[nutrient][IntakeThreshold[i][1]] += Canada_Health[elt][gender][age] * PopulationPyramid[gender][age]
 									else:
-										x.dietary_results[nutrient][  IntakeThreshold[i][1]  ] = Canada_Health[elt][gender][age]
+										x.dietary_results[nutrient][  IntakeThreshold[i][1]  ] = Canada_Health[elt][gender][age] * PopulationPyramid[gender][age]
 
 
 						# END if (NutrientsName[nutrient] in elt)-------------------------------------------------------
 
 					# END for (elt in Canada_Health)--------------------------------------------------------------------
-
-
-
-				for i, threshold in enumerate(IntakeThreshold):
-					if IntakeThreshold[i][1] in x.dietary_results[nutrient]:
-					# if the threshold value was 'NB' in the CanadaHealth database, there is no value
-						x.dietary_results[nutrient][IntakeThreshold[i][2]] = x.TotalNutrients[
-								                                             nutrient] / \
-							                                             x.dietary_results[nutrient][
-								                                             IntakeThreshold[i][1]]
-						del x.dietary_results[nutrient][ IntakeThreshold[i][1] ]
-
 
 				# END for (nutrient)------------------------------------------------------------------------------------
 
@@ -249,8 +249,19 @@ def MDL_QTTperPERSON(x, nutrition):
 		# END for (gender)----------------------------------------------------------------------------------------------
 
 
-	#===================================================================================================================
+	for nutrient in sorted(NutrientsName):
 
+		for i, threshold in enumerate(IntakeThreshold):
+
+			if IntakeThreshold[i][1] in x.dietary_results[nutrient]:
+				# if the threshold value was 'NB' in the CanadaHealth database, there is no value
+				x.dietary_results[nutrient][IntakeThreshold[i][2]] = x.TotalNutrients[
+																		 nutrient] / x.dietary_results[nutrient][
+																		 IntakeThreshold[i][1]]
+				del x.dietary_results[nutrient][IntakeThreshold[i][1]]
+
+	#===================================================================================================================
+	print("""			Summarizing values to get global averages...""")
 	# Calculating an average value for all nutrients together to get an overview :
 	for nutrient in NutrientsName:
 
@@ -278,3 +289,4 @@ def MDL_QTTperPERSON(x, nutrition):
 	for i, threshold in enumerate(IntakeThreshold):
 
 		x.dietary_results[ IntakeThreshold[i][2] ]		=	x.dietary_results[ IntakeThreshold[i][2] ][0]	/	x.dietary_results[ IntakeThreshold[i][2] ][1]
+
