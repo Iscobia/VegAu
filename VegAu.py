@@ -38,7 +38,7 @@ from selfVariables import *
 
 #============================
 #== For the tests :
-from CropRepartition import *
+# from CropRepartition import *
 
 print("Importing modules...")
 
@@ -199,16 +199,10 @@ def MDL_EdibilityTest(x, data):
 																				x.edibleCropsEN[PRA]))
 		#END for (pra in country)
 
-	#=====================================================================================
-	#== EXPORTING THE RESULTS OF THIS FIRST PART =========================================
 
-	# === Enhancing the result's layout before saving ====
-	# def GoodLookingDict(dict_name):
-	# 	result_str = str(sorted(dict_name))
-	# 	result = '],\n'.join(result_str.split('],'))
-	# 	result = '},\n'.join(result.split('},'))
-	# 	return result
 
+	#===================================================================================================================
+	# SAVING... ========================================================================================================
 	file_name = 'CropRepartition'
 	
 	# Saves in a Python file :
@@ -216,17 +210,33 @@ def MDL_EdibilityTest(x, data):
 	print("Saving the results in  {} ...".format(file_name + '.py'))
 
 	dicts = [("CropRepartition_ID", x.edibleCropsID), ("CropRepartition_EN", x.edibleCropsEN),
-	         ("CropRepartition_FR", x.edibleCropsFR), ("CropRepartition_DE", x.edibleCropsDE), ("prodSURFACE", x.prodSURFACE)]
+			 ("CropRepartition_FR", x.edibleCropsFR), ("CropRepartition_DE", x.edibleCropsDE), ("prodSURFACE", x.prodSURFACE)]
+
+	#TODO : find why this version raise a ValueError :
+	# with open(file_name + '.py', 'w') as saves:
+	# 	for i, d in enumerate(dicts) :
+	# 		saves.write("{} = {}\n".format(str(dicts[i][0]), "{"))
+	#
+	# 		for entry in [x for x in sorted(list(dicts[i][1])) if x != sorted(list(dicts[i][1]))[-1] ]:
+	# 			saves.write("	'{}': {},\n".format(entry, dicts[i][1][entry]))
+	 #
+	 #        # The following line raise a ValueError, " invalid literal for int() with base 10"...
+	 #        # Values are properly returned in the debugger, but not when given in the "".format() synthax... (WHY ???)
+	# 		saves.write("	'{}': {}\n".format((sorted(dicts[i][1])[-1], dicts[i][1][sorted(dicts[i][1])[-1]])))
+	#
+	# 		saves.write("	}\n\n")
+
+	#===============================================================================================================
+	# TEMPORARY VERSION (a comma should be erased at the end)
 
 	with open(file_name + '.py', 'w') as saves:
-		for i, d in enumerate(dicts) :
-			saves.write("""{} = {}
-""".format(dicts[i][0], "{"))
-			for entry in dicts[i][1]:
-				saves.write(""",\n	'{}': {}
-""".format(entry, dicts[i][1][entry]))
-			saves.write(""",\n	}
-""")
+		for i, d in enumerate(dicts):
+			saves.write("{} = {}\n".format(str(dicts[i][0]), "{"))
+
+			for entry in [x for x in sorted(list(dicts[i][1])) if x != sorted(list(dicts[i][1]))[-1]]:
+				saves.write("	'{}': {},\n".format(entry, dicts[i][1][entry]))
+
+			saves.write("	}\n\n")
 		
 	#====================================================================
 	# Saves in a .csv file :
@@ -239,12 +249,36 @@ def MDL_EdibilityTest(x, data):
 		for entry in sorted(x.edibleCropsID):
 
 			saves.write("{}; {}; {}; {}; {}; {}\n".format(str(entry), ", ".join(x.edibleCropsID[entry]), ", ".join(x.edibleCropsEN[entry]),
-			            ", ".join(x.edibleCropsFR[entry]), ", ".join(x.edibleCropsDE[entry]),
-			            "; ".join([ str(len([ cr for cr in x.edibleCropsID[entry] if cr == c])) for c in sorted(list(x.prodSURFACE.keys())) if c in x.edibleCropsID[entry]])))
+						", ".join(x.edibleCropsFR[entry]), ", ".join(x.edibleCropsDE[entry]),
+						"; ".join([ str(len([ cr for cr in x.edibleCropsID[entry] if cr == c])) for c in sorted(list(x.prodSURFACE.keys())) if c in x.edibleCropsID[entry]])))
 
 		# ------------------------------------------------------------------
 		saves.write("{0}; {1}; {1}; {1}; {1}; {2}".format("Total potential surface (ha)", "-",
-		                                            "; ".join( [ str(x.prodSURFACE[c]) for c in sorted(list(x.prodSURFACE.keys()))])))
+													"; ".join( [ str(x.prodSURFACE[c]) for c in sorted(list(x.prodSURFACE.keys()))])))
+
+	# ====================================================================
+	# TEST !!!
+	# Saves in a .csv file :
+
+	file_name = "CorpRepartitionTEST"
+
+	print("Saving the results in  {} ...".format(file_name + '.csv'))
+
+	with open(file_name + '.csv', 'w') as saves:
+	# 4 headers lines : a first with IDs, the second with English names, a third with French names and a fourth with German ons.
+		saves.write("PRA; ; {} ; \n".format("; ".join([c for c in sorted(list(x.prodSURFACE.keys()))] )))
+		saves.write("PRA; Edible crop amount ; {} ; \n".format("; ".join([prod_EN(c) for c in sorted(list(x.prodSURFACE.keys()))])))
+		saves.write("PRA; Nombre de cultures éligibles ; {} ; \n".format("; ".join([prod_FR(c) for c in sorted(list(x.prodSURFACE.keys()))])))
+		saves.write("PRA; Menge an passenden Kulturen ; {} ; \n".format("; ".join([prod_DE(c) for c in sorted(list(x.prodSURFACE.keys()))])))
+
+		for entry in sorted(x.edibleCropsID):
+			saves.write("{}; {}; {};\n".format( str(entry), str(len(x.edibleCropsID[entry])),
+														  "; ".join( [str( len([crop for crop in x.edibleCropsID[entry] if crop == c]) )  for c in sorted(list( x.prodSURFACE.keys() ))] )))
+
+		# ------------------------------------------------------------------
+		saves.write("{0}; {1}; {2}".format("Total potential surface (ha)", "-",
+														  "; ".join([str(x.prodSURFACE[c]) for c in
+																	 sorted(list(x.prodSURFACE.keys()))])))
 
 
 	#=====================================================================================
@@ -545,7 +579,7 @@ def MDL_Rotation(x, data):
 {} different crops out of {} succeeded until {}: {}
 
 					""".format(PRA, x.EndPreviousCrop_later, x.rotat[PRA][-1][1], len(list(set(rotation_crops))),
-				               len(rotation_crops), MonthID(x.EndPreviousCrop_later), rotation_crops))
+							   len(rotation_crops), MonthID(x.EndPreviousCrop_later), rotation_crops))
 
 			elif x.EndPreviousCrop_later > 120:
 				print("""
@@ -553,18 +587,18 @@ def MDL_Rotation(x, data):
 
 {} different crops out of {} succeeded until {}: {}
 									""".format(PRA, x.EndPreviousCrop_later, len(list(set(rotation_crops))),
-				                               len(rotation_crops), MonthID(x.EndPreviousCrop_later),
-				                               rotation_crops))
+											   len(rotation_crops), MonthID(x.EndPreviousCrop_later),
+											   rotation_crops))
 			else:
 				print("""
 [{}][{}]	END OF THE ROTATION : An error has been raised, the while loop is broken ("break")
 
 {} different crops out of {} succeeded until {}: {}
 													""".format(PRA, x.EndPreviousCrop_later,
-				                                               len(list(set(rotation_crops))),
-				                                               len(rotation_crops),
-				                                               MonthID(x.EndPreviousCrop_later),
-				                                               rotation_crops))
+															   len(list(set(rotation_crops))),
+															   len(rotation_crops),
+															   MonthID(x.EndPreviousCrop_later),
+															   rotation_crops))
 
 		x.rotation_length[PRA] = (x.EndPreviousCrop_later - 2)  # because it started in March
 
@@ -604,7 +638,7 @@ def MDL_Rotation(x, data):
 			if PRA not in x.mapsPreparation:
 				x.mapsPreparation[PRA] = []
 
-			x.mapsPreparation[PRA].append( len( [c for c in x.results[PRA][4] if c == crop] ) )
+			x.mapsPreparation[PRA].append( len( [c for c in x.results[PRA][4].split(', ') if c == crop] ) )
 
 		x.mapsPreparation['totalYields'].append(x.totalYields["TOTAL"][crop])
 
@@ -620,7 +654,7 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 	print("""===================== STEP 1 =====================
 	Assessing edible Crops for each PRA according to Environmental (Climate and Soil) Data and Biological Data""")
 
-	# ²MDL_EdibilityTest(x, data) # complete function
+	# MDL_EdibilityTest(x, data) # complete function
 
 	#---------------------------------------------------------------------------------------
 	#-- FOR TESTS
@@ -684,7 +718,7 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 
 
 	with open('{}{}.csv'.format(fileName, precision), 'w') as saves:
-		saves.write("'AoI'; " + "; ".join(x.results["headers"]) + '\n')
+		saves.write("'Area of Interest'; " + "; ".join(x.results["headers"]) + '\n')
 		for entry in sorted(x.results.keys()):
 			saves.write("'{}'; {}\n".format(str(entry), str(
 				"; ".join([str(v) for v in x.results[entry]]))))
@@ -703,14 +737,18 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 		pass  # makes sure that the file exists : if there is no file with this name, its creates it
 
 	with open('{}{}.csv'.format(fileName, precision), 'w') as saves:
-		saves.write("'AoI'; " + "; ".join(x.mapsPreparation["headers"])+'\n')
+
+		saves.write("'{}'; {}; {}; {}; {}; {}\n".format(str("headers"), str(x.results["headers"][0]), str(x.results["headers"][1]),
+														str(x.results["headers"][2]), str(x.results["headers"][3]),
+														str("; ".join([str(v) for v in x.mapsPreparation["headers"]]))))
+
 		for entry in sorted(x.results.keys()):
 
-			saves.write("'{}'; {}\n".format( str(entry), str("; ".join([str(v) for v in x.mapsPreparation[entry]])) ))
+			saves.write("'{}'; {}; {}; {}; {}; {}\n".format( str(entry), str(x.results[entry][0]),str(x.results[entry][1]),str(x.results[entry][2]),str(x.results[entry][3]), str("; ".join([str(v) for v in x.mapsPreparation[entry]])) ))
 
 		# Pour les yields de x.mapsPreparation :
 		saves.write("'{}'; {}\n".format("total Yields", str(
-			"; ".join(["-" for v in x.results["headers"]] + [str(v) for v in x.mapsPreparation['totalYields']]))))
+			"; ".join(["-" for v in x.results["headers"][0:4]] + [str(v) for v in x.mapsPreparation['totalYields']]))))
 
 	print("Saves done.")
 
@@ -737,7 +775,7 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 
 
 	NutrientsName = ['Ca', 'Cu', 'Fe', 'I', 'K', 'Mg', 'Mn', 'P', 'Proteins', 'Se', 'Zn', 'carbohydrates', 'lipids', 'vitA',
-	             'vitB1', 'vitB12', 'vitB2', 'vitB3', 'vitB5', 'vitB6', 'vitB9', 'vitC', 'vitD']
+				 'vitB1', 'vitB12', 'vitB2', 'vitB3', 'vitB5', 'vitB6', 'vitB9', 'vitC', 'vitD']
 	Percentages = ['pctBME', 'pctANR_AS', 'pctAMT']
 
 
@@ -745,21 +783,29 @@ if __name__ == '__main__' or __name__ != '__main__': # DEL " or __name__ != '__m
 		pass  # makes sure that the file exists : if there is no file with this name, its creates it
 	
 	with open('dietary_results.csv', 'w') as saves:
-		saves.write('dietary_results = { '+'\n')
+		saves.write('Dietary results : ;\n\n')
 
 		#-------------------------------------------------------------
 		# First, upper table with the nutrients percentages
 
+		saves.write("GLOBAL AVERAGE \n")
+		saves.write("; ".join(list(Percentages) ) + ', \n \n')
+		saves.write("; ".join([str(x.dietary_results[pct]) for pct in Percentages]) + ' \n \n')
+
 		for nutrient in NutrientsName:
-			saves.write("; ".join(x.dietary_results[nutrient]) +', \n')
-			saves.write(" Global average ;" + "; ".join([ str(x.dietary_results[pct]) for pct in Percentages ]) + ', \n \n')
+			saves.write('\n\n' + str(nutrient) + ' \n')
+			saves.write("; " + "; ".join(sorted(x.dietary_results[nutrient])) +', \n')
+			saves.write("; " + "; ".join([ str(x.dietary_results[nutrient][threshold]) for threshold in sorted(x.dietary_results[nutrient])] ) +' \n')
+
+
 
 		# -------------------------------------------------------------
 		# Second table with the daily amount of fruits and vegetables
-
-		saves.write("Crop ; Daily Product Amount per Person ; Weekly Product Amount per Person" + '\n')
+		saves.write("DETAILED AMOUNT OF PRODUCTS AND DIETICAL ELEMENTS PER DAY (and week -> first column) \n")
+		saves.write("Quantité détaillée de produits alimentaires et valeurs nutritives par jour (et semaine -> première colonne) \n")
+		saves.write("Crop ; Weekly Product Amount per Person ; Daily Product Amount per Person" + "; ".join( nutrition['headers_full'][8:-1] ) + '\n')
 		for crop in x.WeeklyResources.keys():
-			saves.write("{};{} \n".format(crop, round(x.WeeklyResources[crop], 2), round(x.WeeklyResources[crop]*7, 2)))
+			saves.write("{};{};{}\n".format(crop, str(round(x.WeeklyResources[crop]/7, 2)), str(round(x.WeeklyResources[crop], 2))))
 
 
 

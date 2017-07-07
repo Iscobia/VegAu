@@ -204,10 +204,10 @@ def MDL_QTTperPERSON(x, nutrition):
 		'vitB1'	:	'Thiamine',
 		'vitB2'	:	'Riboflavine',
 		'vitB3'	:	'Niacine',
-		'vitB5'	:	'panto', # Acide pantothénique
+		'vitB5'	:	'Acide panthoénique',
 		'vitB6'	:	'B6',
 		'vitB12':	'B12',
-		'vitB9'	:	'Folates'
+		'vitB9'	:	'Folate'
 	}
 
 	IntakeThreshold = [('BME', 'sumBME', 'pctBME'), ('AS', 'sumANR_AS', 'pctANR_AS'), ('AMT', 'sumAMT', 'pctAMT')]
@@ -217,13 +217,15 @@ def MDL_QTTperPERSON(x, nutrition):
 		for age in sorted(PopulationPyramid[gender]):
 
 			for nutrient in sorted(NutrientsName) :
-				x.dietary_results[nutrient] = {}
+
+				if nutrient not in x.dietary_results :
+					x.dietary_results[nutrient] = {}
 
 				for elt in sorted( Canada_Health.keys() ):
 
 					#---------------------------------------------------------------------------------------------------
 
-					if NutrientsName[nutrient] in elt:
+					if NutrientsName[nutrient] in elt and "IU/jour" not in elt: # Interantional Units are not given in the Ciqual database
 
 						for i, threshold in enumerate(IntakeThreshold):
 
