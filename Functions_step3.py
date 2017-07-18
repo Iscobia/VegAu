@@ -15,12 +15,13 @@ The import of this sheet is ensured by the module 'importingODS.py'"""
 
 # Notice: Variables from the 'nutrition' dictionary are in importedVariables.
 
-from selfVariables import x
 from CanadaHealth import Canada_Health	# dictionary containing the Dietary Reference Intakes calculated by Canada Health
 
 from importedVariables import *	# lambda functions to access easier to the data from the abode imported dicts
 
 from inputFR import nutrition
+
+
 
 #########################################
 #										#
@@ -69,7 +70,10 @@ def MDL_QTTperPERSON(x, nutrition):
 
 	print("""			Calculating the daily amount of each product per person and the total intake of each
 			nutrient for the total population...""")
-
+	
+	x.dietary_results   = {}
+	x.TotalNutrients    = {}
+	
 	x.totalYields = x.totalYields["TOTAL"]
 
 	x.WeeklyResources = {}
@@ -89,7 +93,7 @@ def MDL_QTTperPERSON(x, nutrition):
 
 		productQuantity     = float(prodQUANTITY(crop))
 
-		x.WeeklyResources[crop]  = ((total_yield * productQuantity) / 365 * 7) / totalPopulation
+		x.WeeklyResources[crop]  = (((total_yield * productQuantity) / 365) * 7) / totalPopulation
 
 		print("{} : {} piece per week ({} kg, so {} kg in one year)".format(prod_EN(crop), x.WeeklyResources[crop], total_yield/365*7, total_yield))
 
@@ -211,7 +215,7 @@ def MDL_QTTperPERSON(x, nutrition):
 	}
 
 	IntakeThreshold = [('BME', 'sumBME', 'pctBME'), ('AS', 'sumANR_AS', 'pctANR_AS'), ('AMT', 'sumAMT', 'pctAMT')]
-
+	
 	for gender in sorted(PopulationPyramid):
 
 		for age in sorted(PopulationPyramid[gender]):
@@ -225,7 +229,7 @@ def MDL_QTTperPERSON(x, nutrition):
 
 					#---------------------------------------------------------------------------------------------------
 
-					if NutrientsName[nutrient] in elt and "IU/jour" not in elt: # Interantional Units are not given in the Ciqual database
+					if NutrientsName[nutrient] in elt and "IU /jour" not in elt: # Interantional Units are not given in the Ciqual database
 
 						for i, threshold in enumerate(IntakeThreshold):
 
@@ -260,13 +264,13 @@ def MDL_QTTperPERSON(x, nutrition):
 				x.dietary_results[nutrient][IntakeThreshold[i][2]] = x.TotalNutrients[
 																		 nutrient] / x.dietary_results[nutrient][
 																		 IntakeThreshold[i][1]]
-				del x.dietary_results[nutrient][IntakeThreshold[i][1]]
+				# del x.dietary_results[nutrient][IntakeThreshold[i][1]]
 
 	#===================================================================================================================
 	print("""			Summarizing values to get global averages...""")
 	# Calculating an average value for all nutrients together to get an overview :
 	for nutrient in NutrientsName:
-
+		
 		#-----------------------------------------------------------------------------------------------------
 
 		# 1 -- summing all percentages (for all nutrients) and taking h*the amount of data into account:
@@ -289,6 +293,11 @@ def MDL_QTTperPERSON(x, nutrition):
 		# 2 -- calculating the average for all threshold type :
 
 	for i, threshold in enumerate(IntakeThreshold):
+		# IntakeThreshold[i][2] corresponds to "pctThreshold"
+		
+		x.dietary_results[ IntakeThreshold[i][1] ]  = x.dietary_results[IntakeThreshold[i][1]][0] / x.dietary_results[IntakeThreshold[i][1]][1]
+		x.dietary_results[ IntakeThreshold[i][2] ]	= x.dietary_results[ IntakeThreshold[i][2] ][0]	/	x.dietary_results[ IntakeThreshold[i][2] ][1]
 
-		x.dietary_results[ IntakeThreshold[i][2] ]		=	x.dietary_results[ IntakeThreshold[i][2] ][0]	/	x.dietary_results[ IntakeThreshold[i][2] ][1]
 
+
+	

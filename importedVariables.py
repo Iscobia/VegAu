@@ -7,26 +7,28 @@
 #										#
 #########################################
 
-from inputFR import *
+from inputFR import plants
+from inputFR import environment
+from inputFR import nutrition
 
 #===================================================================
 #== INDICES, variables importantes:
 
 
 #== row index for crops :
-CROProw_PLANTS			= lambda prodID:	plants[prodID]['CROP_index']
-CROProw_NUTRITION		= lambda prodID:	nutrition[prodID]['CROP_index']
-CROProw_NUTRITIONvirgin		= lambda prodID:	NUTRITIONvirgin_dict[prodID]['CROP_index']
+# CROProw_PLANTS			= lambda prodID:	plants[prodID]['CROP_index']
+# CROProw_NUTRITION		= lambda prodID:	nutrition[prodID]['CROP_index']
+# CROProw_NUTRITIONvirgin		= lambda prodID:	NUTRITIONvirgin_dict[prodID]['CROP_index']
 
 
 #== column index for prodIDs :
-CROPcol_PRAedibility	= lambda prodID:	plants[prodID]['colIndex_PRAedibility']
-CROPcol_PRAyields		= lambda prodID:	plants[prodID]['colIndex_PRAyields']
+# CROPcol_PRAedibility	= lambda prodID:	plants[prodID]['colIndex_PRAedibility']
+# CROPcol_PRAyields		= lambda prodID:	plants[prodID]['colIndex_PRAyields']
 
 
 #== row index for PRAs :
-PRArow_ENVIRONMENT	= lambda pra:	environment[pra]['PRA_index']
-PRArow_PRAvirgin	= lambda pra:	PRAvirgin_dict[pra]['PRA_index']
+# PRArow_ENVIRONMENT	= lambda pra:	environment[pra]['PRA_index']
+# PRArow_PRAvirgin	= lambda pra:	PRAvirgin_dict[pra]['PRA_index']
 
 
 
@@ -46,7 +48,8 @@ prod_FR	= lambda prodID:	plants[prodID][7]
 prod_SC	= lambda prodID:	plants[prodID][8]
 #~ expYIELD_min	= lambda prodID:	plants[prodID][9]
 #~ expYIELD_max	= lambda prodID:	plants[prodID][10]
-expYIELD	= lambda prodID:	plants[prodID][11]  # expYIELD_av in the .ods file
+expYIELD	= lambda prodID:	plants[prodID][10]  # expYIELD_max in the .ods file
+# expYIELD	= lambda prodID:	plants[prodID][11]  # expYIELD_av in the .ods file
 expSTRAW_rate	= lambda prodID:	plants[prodID][12]
 prodN	= lambda prodID:	plants[prodID][13]
 prodP	= lambda prodID:	plants[prodID][14]

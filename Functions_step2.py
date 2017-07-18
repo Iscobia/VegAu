@@ -20,7 +20,6 @@ The import of this sheet is ensured by the module 'importingODS.py'"""
 #########################################
 
 from importedVariables import *	# lambda functions to access easier to the data from the abode imported dicts
-from Functions_step1 import CORRseed_to
 from Functions_step1 import CORR_TOLERdf
 from Functions_step1 import WaterResources
 
@@ -47,7 +46,7 @@ def MonthID(month):
 	if month % 12 == 0:
 		return "dec" + str(year - 1)
 	else:
-		return MonthName[MonthNum] + str(year)
+		return MonthName[int(MonthNum)] + str(year)
 
 #================================================================================================================
 
@@ -329,7 +328,7 @@ def mineralizedN(crop, month):
 	OUTPUT:
 	the amount of N that is returned to the soil after decomposition
 	"""
-	from math import exp
+	# from math import exp
 
 	# t	=	month * 30.5 # this function requires days
 	# R	=	CN(crop)
@@ -344,8 +343,8 @@ def mineralizedN(crop, month):
 	# d	=	1.94
 	# e	=	0.73
 	# f	=	10.2
-	# h	=	1 - (e*R) / ( f + R) # humification rate of microbial biomass (ndays^-1)
-	# k	=	c + d/R	* 0.98 * 0.74	# decomposition rate of plant residues (ndays^-1)
+	# h	=	1 - (e*R) / ( f + R) # humification rate of microbial biomass (n days^-1)
+	# k	=	c + d/R	* 0.98 * 0.74	# decomposition rate of plant residues (n days^-1)
 	# λ	=	0.0076
 	#
 	# Y0	=	0.62	# Assimilation yield residue-C by microbial biomass (g/g)
@@ -392,10 +391,10 @@ def VERIF_TreesInRegion(PRA, x, data):
 
 	print("			Verifying if there are permanent crops with optimal Water Requirements for this PRA...")
 	# representativity limit for permanent crops
-	MaxPermaCrops = round((0.15 * len([pra for pra in environment if pra != 'headers_full' and pra != 'headers_ID']) / len([c for c in plants if prodCAT(c) == 1 or prodCAT(c) == 2]) ))
+	MaxPermaCrops = round((0.15 * len([pra for pra in data.environment if pra != 'headers_full' and pra != 'headers_ID']) / len([c for c in data.plants if prodCAT(c) == 1 or prodCAT(c) == 2]) ))
 
-	PRA_in_region = [pra for pra in environment if pra in x.results and (CODE_REG(pra) == CODE_REG(PRA) and pra != PRA)]
-	PRA_in_dept = [pra for pra in environment if pra in x.results and (CODE_DEPT(pra) == CODE_DEPT(PRA) and pra != PRA)]
+	PRA_in_region = [pra for pra in data.environment if pra in x.results and (CODE_REG(pra) == CODE_REG(PRA) and pra != PRA)]
+	PRA_in_dept = [pra for pra in data.environment if pra in x.results and (CODE_DEPT(pra) == CODE_DEPT(PRA) and pra != PRA)]
 
 	crops_in_region = []
 	crops_in_dept   = []
@@ -410,7 +409,7 @@ def VERIF_TreesInRegion(PRA, x, data):
 	if len([c for c in crops_in_dept if prodCAT(c) == 1 or prodCAT(c) == 2]) <= 2:
 	# if there are already 2 permanent crops in the departement, we give priority to changing crops. Else:
 
-		permanent_crops_in_PRA = [c for c in x.edibleCrops if (prodCAT(c) == 1 or prodCAT(c) == 2) and x.indexWR[c] > 0.98]
+		permanent_crops_in_PRA = [c for c in x.edibleCrops if 1 <= prodCAT(c) <= 2 and round(x.indexWR[c], 2) >= 0.75]
 		fruits_in_PRA = [c for c in permanent_crops_in_PRA if ('FRT' in c or 'EXOT' in c)]
 		nuts_in_PRA = [c for c in permanent_crops_in_PRA if 'NUT' in c]
 		berries_in_PRA = [c for c in permanent_crops_in_PRA if 'BERRY' in c]
@@ -495,9 +494,16 @@ def VERIF_TreesInRegion(PRA, x, data):
 								if [ c for c in x.representativity if ( c in CropType and x.representativity[c] < MaxPermaCrops )] != []:
 									CropType = [ c for c in x.representativity if ( c in CropType and x.representativity[c] < MaxPermaCrops )]
 									crops_representativity = [x.representativity[c] for c in CropType]
-									# The selected crop is the one with the lower representativity :
+									
+									# The selected crop is the one with the lower representativity and the better WaterResources-index:
 									if min(crops_representativity) < MaxPermaCrops:
-										x.SelectedCrop = [c for c in CropType if x.representativity[c] == min(crops_representativity)][0]
+										
+										lessRepresentedCrops = [c for c in CropType if x.representativity[c] == min(crops_representativity)]
+										priority = [(x.indexWR[c] * (1 - data.plants[c]['ratioADAPT'])) / 2 for c in lessRepresentedCrops]
+										
+										x.SelectedCrop = [c for c in lessRepresentedCrops if (
+												x.indexWR[c] * (1 - data.plants[c]['ratioADAPT'])) / 2 == max(priority)][0]
+										
 										x.CHOICE[PRA].append((
 										                     'Permanent crop (not in country, greater rarity and water indexes',
 										                     len(CropType)))
@@ -526,10 +532,17 @@ def VERIF_TreesInRegion(PRA, x, data):
 								# =======================================================================================
 								if len(both_CropType_AND_representativity) == len(CropType) :
 								# if all crops have already been used
-									# The selected crop is the one with the lower representativity :
-									lowestRepresentativity_lower_than_MaxPermaCrops =[c for c in both_CropType_AND_representativity if (x.representativity[c] == min(crops_representativity) and x.representativity[c] < MaxPermaCrops )]
-									if lowestRepresentativity_lower_than_MaxPermaCrops != [] :
-										x.SelectedCrop = lowestRepresentativity_lower_than_MaxPermaCrops[0]
+									# The selected crop is the one with the lower representativity (in all case lower than MaxPermaCrops) :
+									lowestRepresentativity = [c for c in both_CropType_AND_representativity if (x.representativity[c] == min(crops_representativity) and x.representativity[c] < MaxPermaCrops )]
+									
+									if lowestRepresentativity != [] :
+										
+										priority = [(x.indexWR[c] * (1 - data.plants[c]['ratioADAPT'])) / 2 for c in
+										            lowestRepresentativity]
+										
+										x.SelectedCrop = [c for c in lowestRepresentativity if (
+											x.indexWR[c] * (1 - data.plants[c]['ratioADAPT'])) / 2 == max(priority) ][0]
+										
 										x.CHOICE[PRA].append(('Permanent crop (not in region, already in country)', len(CropType)))
 
 								else: # if there are not enough representativity data
@@ -1097,7 +1110,7 @@ def SELECT_CashCrop(x, PRA, data):
 
 	OUTPUT :
 	*	crop ID of the Selected crop
-	*	the list 'x.edibleCompanionCrops' with thoses from the edible crops that are cover crops or companion crops
+	*	the list 'x.edibleCompanionCrops' with theses from the edible crops that are cover crops or companion crops
 	"""
 
 	Final_Edibility_Index	= {}
@@ -1268,9 +1281,11 @@ def SELECT_CashCrop(x, PRA, data):
 		if [c for c in x.edibleCrops if c not in x.representativity] != [] :
 		# if there are still crops that have not been used at a country scale, making sure that they are the only one to stay:
 			x.edibleCrops = [c for c in x.edibleCrops if c not in x.representativity]
+		
 		else:
 		# if all crops have been used at the country scale, chosing the one(s) with the lowest occurence:
 			CropsUsedAtCountryScale = [x.representativity[c] for c in x.representativity if c in x.edibleCrops]
+		
 			if CropsUsedAtCountryScale != []:
 				minRepresentativity = min([x.representativity[c] for c in x.representativity if c in x.edibleCrops])
 
@@ -1323,7 +1338,7 @@ def SELECT_CashCrop(x, PRA, data):
 							x.SelectedCrop = FinalSelection[0]
 						# -----------------------------------------------
 						else:
-							# At least, chosing the crop with the lowest ratioADAPT (crop which have the lesser geographic adaptability in the study area, here France)
+							# At least, choosing the crop with the lowest ratioADAPT (crop which have the lesser geographic adaptability in the study area, here France)
 							priority = [data.plants[crop]['ratioADAPT'] for crop in FinalSelection]
 							FinalSelection = [x for x in FinalSelection if data.plants[x]['ratioADAPT'] == min(priority)]
 
@@ -1638,9 +1653,11 @@ def ASSESS_Nutrients_CompanionCrop(x, PRA):
 
 					monthInGS += 1
 					# END while (monthInGS < endGSmin)
-
-				x.indexNutrients[crop][nutrient] = sum(x.indexNutrients[crop][nutrient]) / len(
-					x.indexNutrients[crop][nutrient])
+				
+				if crop in x.indexNutrients:
+				# the crop may have been deleted from the dict if there was no nutrients enough for it in the soil
+					x.indexNutrients[crop][nutrient] = sum(x.indexNutrients[crop][nutrient]) / len(
+						x.indexNutrients[crop][nutrient])
 
 
 
@@ -1782,7 +1799,7 @@ def APPLY_ResiduesDecomposition_of_CompanionCrop(x):
 			mineralizedCPK_amount = mineralizedCPK(x.SelectedCC, i) - mineralizedCPK(x.SelectedCC, i - 1)
 			# the functions mineralizedCPK(crop, month) and mineralizedN(crop, month) give the mineralized stuff amount at month[i]
 			# to get the mineralized amount while month[i] only --> month[i] - month [i-1]
-			if mineralizedN_amount > 0 or mineralizedCKN_amount > 0:
+			if mineralizedN_amount > 0 or mineralizedCPK_amount > 0:
 
 				if nutrient == 'N':
 					x.decomposition_month[i][nutrient] += mineralizedN_amount/2 # The density of a CompanionCrop can't be as high as if it were grown alone -> divided by 2

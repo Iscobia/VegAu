@@ -242,8 +242,15 @@ def ASSESS_Tmin(crop, x, PRA):
 
 	x.edible_Tmin = []
 	GrowingMonth = 1
-	CurrentMonth = int(seed_from(crop))
-	maximum_growing_season_duration = int(GSmax(crop))
+	the_current_crop_is_a_permanent_crop = prodCAT(crop) == 1 or prodCAT(crop) == 2
+	#                                      --> fruit/nut tree (1), shrub (2)
+	
+	if the_current_crop_is_a_permanent_crop :
+		CurrentMonth = 1
+		maximum_growing_season_duration = 12 # the minimum T given for trees/shrubs should never be overridden in a whole year
+	else:
+		CurrentMonth = int(seed_from(crop))
+		maximum_growing_season_duration = int(GSmax(crop))
 
 	while GrowingMonth <= maximum_growing_season_duration:
 		if CurrentMonth % 12 == 0:
@@ -363,7 +370,7 @@ def ASSESS_Water(crop, PRA, x):
 
 	while GrowingMonth <= maximum_growing_season_duration:
 		# Following line can be removed once the issue is solved
-		waterResources = WaterResources(CurrentMonth%12, seed_from(crop), PRA, crop, x)
+		# waterResources = WaterResources(CurrentMonth%12, seed_from(crop), PRA, crop, x)
 
 		#= Determining the current stage of the GS =============================================
 		if GrowingMonth <= GS1_4 :
@@ -520,7 +527,7 @@ def ASSESS_Priority(x, data):
 	*	'ratioADAPT'
 	*	'PRIORITYgeneral'
 	*	'PRIORITYfruits'
-	*	'PRIORITYtextiles'
+	*	'PRIORITYtextile'
 	"""
 
 
@@ -603,13 +610,13 @@ def ASSESS_Priority(x, data):
 							data.plants[crop]['PRIORITYfruits'] = 1
 
 						else:
-							if 1 < QttPerInhabitant < 2:
+							if 1.0 < QttPerInhabitant < 2.0:
 								data.plants[crop]['PRIORITYfruits'] = 2
 
-							elif 2 < QttPerInhabitant < 3:
+							elif 2.0 < QttPerInhabitant < 3.0:
 								data.plants[crop]['PRIORITYfruits'] = 3
 
-							elif 3 < QttPerInhabitant < 4:
+							elif 3.0 < QttPerInhabitant < 4.0:
 								data.plants[crop]['PRIORITYfruits'] = 4
 
 							else: # if more than 4kg/person/week
