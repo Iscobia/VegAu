@@ -318,11 +318,24 @@ def MDL_Rotation(x, data):
 		
 		#---------------------------------------------------------------------------------------------------------------
 		# ORIGINAL ActualStand :
-		x.ActualStand[PRA] = {"N": nmin_med(PRA), "P": P_med(PRA), "K": K_med(PRA), "Na": nao_med(PRA),
-		                      "Mg": mgo_med(PRA), "Ca": cao_med(PRA), "Mn": mned_med(PRA), "Fe": feed_med(PRA),
-		                      "Cu": cued_med(PRA), "OM": corgox_med(PRA)}
+		# x.ActualStand[PRA] = {"N": nmin_med(PRA), "P": P_med(PRA), "K": K_med(PRA), "Na": nao_med(PRA),
+		#                       "Mg": mgo_med(PRA), "Ca": cao_med(PRA), "Mn": mned_med(PRA), "Fe": feed_med(PRA),
+		#                       "Cu": cued_med(PRA), "OM": corgox_med(PRA)}
 		
-		# EXPERIMENTAL ActualStand ("no limit") :
+		# 1st EXPERIMENTAL ActualStand (maximum values) :
+		x.ActualStand[PRA] = {"N": max([x for x in [nmin_med(x) for x in environment if "headers" not in x]]),
+		                      "P": max([x for x in [P_med(x) for x in environment if "headers" not in x]]),
+		                      "K": max([x for x in [K_med(x) for x in environment if "headers" not in x]]),
+		                      "Na": max([x for x in [nao_med(x) for x in environment if "headers" not in x]]),
+		                      "Mg": max([x for x in [mgo_med(x) for x in environment if "headers" not in x]]),
+		                      "Ca": max([x for x in [cao_med(x) for x in environment if "headers" not in x]]),
+		                      "Mn": max([x for x in [mned_med(x) for x in environment if "headers" not in x]]),
+		                      "Fe": max([x for x in [feed_med(x) for x in environment if "headers" not in x]]),
+		                      "Cu": max([x for x in [cued_med(x) for x in environment if "headers" not in x]]),
+		                      "OM": max([x for x in [corgox_med(x) for x in environment if "headers" not in x]]) }
+		
+	
+		# 2nd EXPERIMENTAL ActualStand ("no limit") :
 		# for nutrient in x.ActualStand[PRA]:
 		# 	x.ActualStand[PRA][nutrient] = 3000
 			
@@ -428,6 +441,8 @@ def MDL_Rotation(x, data):
 							#		* a dictionary 'GSstart' with: keys = crop's indexes, values = first GS month
 
 
+							#TODO almost all enties get randomly doubled with the maximum soil stand --> workaround :
+							x.edibleCrops = list(set(x.edibleCrops))
 
 							# print("Looking for the optimal Water Resources... (edible crops are : {})". format(x.edibleCrops))
 
@@ -484,8 +499,9 @@ def MDL_Rotation(x, data):
 
 									APPLY_SelectedCC_Kill(PRA, x) # the selected Companion Crop is cut at the same time as the Selected Cash Crop is harvested
 									APPLY_SelectedCrop_Harvest(PRA, x)	# updates 'ActualStand'
-															# /!\ CAUTION: if there is a x.SelectedCC, SelectedCC_Kill(PRA, x) modifies 'ActualStand' !
-															#		----> SelectedCC_Kill(PRA, x) must run BEFORE SelectedCrop_Harvest(PRA, x) !!
+									#TODO find out if the lines below was usefull (else, delete them)
+									# PestsDiseases_in_rotation				# /!\ CAUTION: if there is a x.SelectedCC, SelectedCC_Kill(PRA, x) modifies 'ActualStand' !
+									# 						#		----> SelectedCC_Kill(PRA, x) must run BEFORE SelectedCrop_Harvest(PRA, x) !!
 
 
 
@@ -628,17 +644,17 @@ def VegAu(precision):
 	print("""===================== STEP 1 =====================
 		Assessing edible Crops for each PRA according to Environmental (Climate and Soil) Data and Biological Data""")
 	
-	# MDL_EdibilityTest(x, data) # complete function
+	MDL_EdibilityTest(x, data) # complete function
 	
 	# ---------------------------------------------------------------------------------------
 	# -- FOR TESTS
-	x.edibleCropsID = CropRepartition_ID
-	x.edibleCropsEN = CropRepartition_EN
-	x.edibleCropsFR = CropRepartition_FR
-	x.edibleCropsDE = CropRepartition_DE
-	x.prodSURFACE = prodSURFACE
-	
-	ASSESS_Priority(x, data)
+	# x.edibleCropsID = CropRepartition_ID
+	# x.edibleCropsEN = CropRepartition_EN
+	# x.edibleCropsFR = CropRepartition_FR
+	# x.edibleCropsDE = CropRepartition_DE
+	# x.prodSURFACE = prodSURFACE
+	#
+	# ASSESS_Priority(x, data)
 	
 	# ---------------------------------------------------------------------------------------
 	
@@ -747,7 +763,7 @@ def VegAu(precision):
 					===================== STEP 3 =====================
 			Calculating the average daily nutritional value per person for the total yield...""")
 	
-	MDL_QTTperPERSON(x, nutrition)
+	MDL_QTTperPerson(x, nutrition)
 	# This function updates the 'TotalNutrients' dictionary by dividing each nutrient amount by the total population
 	# and copies the results in the sheet 'NUTRIassess' for each crop in order to keep a friendly interface to oberve the results.
 	# OUTPUT:	* updated 'TotalNutrient' dictionnay with the average nutrient quantity per person
@@ -996,7 +1012,7 @@ if __name__ == '__main__':
 		Calculating the average daily nutritional value per person for the total yield...""")
 
 
-	MDL_QTTperPERSON( x, nutrition )
+	MDL_QTTperPerson( x, nutrition )
 	# This function updates the 'TotalNutrients' dictionary by dividing each nutrient amount by the total population
 	# and copies the results in the sheet 'NUTRIassess' for each crop in order to keep a friendly interface to oberve the results.
 	# OUTPUT:	* updated 'TotalNutrient' dictionnay with the average nutrient quantity per person
@@ -1006,7 +1022,8 @@ if __name__ == '__main__':
 	
 	#==================================================================================================================================
 	### Exporting the data in a csv file
-
+	
+	print("Saving the dietary results...")
 
 	NutrientsName = ['Ca', 'Cu', 'Fe', 'I', 'K', 'Mg', 'Mn', 'P', 'Proteins', 'Se', 'Zn', 'carbohydrates', 'lipids', 'vitA',
 				 'vitB1', 'vitB12', 'vitB2', 'vitB3', 'vitB5', 'vitB6', 'vitB9', 'vitC', 'vitD']
@@ -1051,7 +1068,8 @@ if __name__ == '__main__':
 					l.append("-")
 
 			saves.write( "{};{};\n".format( nutrient, "; ".join(l)))
-	
+		
+		print("First dietary table saved        [OK]")
 		#
 		# # -------------------------------------------------------------
 		# # First, upper table with the nutrients percentages
@@ -1087,7 +1105,10 @@ if __name__ == '__main__':
 			
 			else:
 				saves.write("{};\n".format(crop))
-				
+		
+		print("Second dietary table saved        [OK]")
+		
+		
 		# -------------------------------------------------------------
 		# Third table with the daily amount of fruits and vegetables from the TOTAL YIELDS
 		
@@ -1106,8 +1127,11 @@ if __name__ == '__main__':
 				saves.write("{};{};\n".format(crop, "; ".join( [str(round((nutrition[crop][i] * x.totalYields[crop]*1000 / 365), 4)) for i in sorted(nutrition[crop])[8:-1]]) ))
 			
 			else:
-				saves.write("{};\n".format(crop, "; ".join( [str(0) for i in sorted(nutrition[crop])[8:-1]])))
-				
+				saves.write("{};\n".format(crop, "; ".join( [str(0) for i in nutrition['headers_ID'][8:-1]] )))
+			
+		print("Third dietary table saved        [OK]")
+		
+		
 	#Code's end
 	print("VegAu is done !")
 

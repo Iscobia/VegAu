@@ -30,7 +30,7 @@ from inputFR import nutrition
 #########################################
 
 
-def MDL_QTTperPERSON(x, nutrition):
+def MDL_QTTperPerson(x, nutrition):
 	"""INPUT :
 	*	x			is the class that contains all self variables used in all VegAu's functions
 	*	nutrition	is the dictionary that has been imported from 'input[COUNTRY].py'
@@ -53,9 +53,7 @@ def MDL_QTTperPERSON(x, nutrition):
 		* FISRT PART :
 			* the dictionary x.TotalNutrients with the average daily resources
 		* SECOND PART :
-			* updated 'TotalNutrient' dictionnay with the average nutrient quantity per person
-			* fulfilled 'NUTRIassess' sheet
-			* fulfilled 'Results' sheet
+			* updated 'TotalNutrient' dictionary with the average nutrient quantity per person
 	"""
 
 	# ==========================================================================================#
@@ -84,11 +82,11 @@ def MDL_QTTperPERSON(x, nutrition):
 		if crop == "FBRflx":
 			# for fibre flax, yields are given for the fibre : for a fibre yield of 4.94 t/ha, there are 1 t/ha of seeds.
 
-			# converting the total Yields from tons to kilogramms
+			# converting the total Yields from tons to kilograms
 			total_yield = round( float(x.totalYields[crop])/4.94 * 1000,  3)
 
 		else:
-			# converting the total Yields from tons to kilogramms
+			# converting the total Yields from tons to kilograms
 			total_yield = round(float(x.totalYields[crop]) * 1000, 3)
 
 		productQuantity     = float(prodQUANTITY(crop))

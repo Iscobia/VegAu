@@ -250,7 +250,7 @@ def ASSESS_Tmin(crop, x, PRA):
 		maximum_growing_season_duration = 12 # the minimum T given for trees/shrubs should never be overridden in a whole year
 	else:
 		CurrentMonth = int(seed_from(crop))
-		maximum_growing_season_duration = int(GSmax(crop))
+		maximum_growing_season_duration = int(GSmax(crop) + abs(seed_to(crop) - seed_from(crop)))
 
 	while GrowingMonth <= maximum_growing_season_duration:
 		if CurrentMonth % 12 == 0:
@@ -305,13 +305,14 @@ def ASSESS_Sunshine(crop, PRA, x):
 
 	edible_Sunshine = []
 	crop_needs_sun = 'CTR' in crop or 'EXOT' in crop or 'MLN' in crop
+	maximum_growing_season_duration = GSmax(crop) + abs(seed_to(crop) - seed_from(crop))
 
 	#-----------------------------------------------------------------
 	GrowingMonth = 1
 	CurrentMonth = seed_from(crop)
 	# -----------------------------------------------------------------
 
-	while GrowingMonth <= GSmax(crop):
+	while GrowingMonth <= maximum_growing_season_duration:
 		enough_sunshine = SOLmoy_ratio_northernCountries(GrowingMonth, PRA) <= 0.8
 
 		if crop_needs_sun:
@@ -360,7 +361,7 @@ def ASSESS_Water(crop, PRA, x):
 
 	CORR_TOLERdf(crop, x) # these function updates x.TOLERflood and x.TOLERdrought --> calculates % from the indices TOLERflood(crop) and TOLERdrought(crop)
 	edible_WaterRqt = []
-	maximum_growing_season_duration = GSmax(crop)
+	maximum_growing_season_duration = GSmax(crop) + abs(seed_to(crop) - seed_from(crop))
 	GS1_4	= round(maximum_growing_season_duration * 0.25 )
 	GS2_4	= round(maximum_growing_season_duration * 0.50 )
 	GS3_4	= round(maximum_growing_season_duration * 0.75 )
@@ -428,7 +429,8 @@ def ASSESS_Water(crop, PRA, x):
 	the_selected_crop_is_a_permanent_crop = prodCAT(crop) == 1 or prodCAT(crop) == 2  # fruit/nut tree (1), shrub (2)
 
 	if the_selected_crop_is_a_permanent_crop :
-		x.edible_Tmin = []
+		#TODO vérifier que x.edible_Tmin n'est effectivement pas utilisé dans cette fonction
+		# x.edible_Tmin = []
 		PRAedibTest = []
 		count = 0
 
@@ -570,8 +572,11 @@ def ASSESS_Priority(x, data):
 				pass
 			else:
 				# calculating the quantity per Inhabitant in kg from the Yields in tons :
-				QttPerInhabitant = ((expYIELD(crop) * 1000 * x.prodSURFACE[crop])/Population)/WeeksInYear
-
+				try:
+					QttPerInhabitant = ((expYIELD(crop) * 1000 * x.prodSURFACE[crop])/Population)/WeeksInYear
+				except TypeError:
+					# There is no optimal yield value for the current crop : choosing the average yield weight:
+					QttPerInhabitant = ((plants[crop][11] * 1000 * x.prodSURFACE[crop]) / Population) / WeeksInYear
 
 				#======================================================================================
 				#=== Calculating the "adaptation ratio" for the current CROP
